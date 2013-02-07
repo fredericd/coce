@@ -15,6 +15,6 @@ A cover image cache exposing its content as a REST web service.
 
 # Start
 
-  cd <Coce HOME>
+  cd _Coce HOME_
   node coce.js
 
