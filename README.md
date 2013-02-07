@@ -1,16 +1,20 @@
-Coce
+# Coce
 
-Installation:
+A cover image cache exposing its content as a REST web service.
 
-  - Install and start redis
-  - Edit config.json file
-  - Install node libraries:
-    npm install express
-    npm install redis
-    npm install aws-lib
-    nom install util
 
-Start:
+# Installation
 
+* Install and start redis
+
+* Edit config.json file
+
+* Install node libraries:
+  
+  npm install express redis aws-lib util
+
+# Start
+
+  cd <Coce HOME>
   node coce.js
 

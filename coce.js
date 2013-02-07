@@ -7,6 +7,7 @@ var http = require('http');
 var app = express();
 var util = require('util');
 
+var regGb = new RegExp("(zoom=5)", "g");
 
 /*
  * Coce object
@@ -48,7 +49,6 @@ var Coce = {
               // Not in the cache => search
               redis.setex(key, Coce.c.timeout, '');
               if (_provider === 'gb') {
-                console.log('On cherche chez gb');
                 var opts = {
                   host: 'books.google.com',
                   port: 80,
@@ -65,6 +65,8 @@ var Coce = {
                     for (var id in _GBSBookInfo) {
                       var url = _GBSBookInfo[id].thumbnail_url;
                       if ( url === undefined ) { continue; }
+                      // get the medium size cover image
+                      url = url.replace(regGb, 'zoom=1');
                       redis.setex(key, Coce.c.timeout, url);
                       if (found[_id] === undefined) { found[_id] = {}; }
                       found[_id][_provider] = url;
@@ -75,25 +77,23 @@ var Coce = {
                   });
                 });
               } else if (_provider === 'aws' ) {
-                console.log('On cherche chez aws');
                 var options = { 
                   SearchIndex: 'All',
                   Keywords: _id,
                   ResponseGroup: 'Images'
                 };
                 Coce.awsProdAdv.call('ItemSearch', options, function(err, result) {
-                  console.log(result.Items);
+                  //console.log(result.Items);
                   var items = result.Items;
                   if ( items.TotalResults > 0 ) {
                     var item = items.Item;
                     if (item instanceof Array) { item = item[0]; }
-                    console.log(util.inspect(item, false, null));
+                    //console.log(util.inspect(item, false, null));
                     var url = item[Coce.c.aws.imageSize];
                     if (url !== undefined) { // Amazon has a cover image
                       var url = url.URL;
                       redis.setex(key, Coce.c.timeout, url);
-                      console.log( "image = " + url );
-                      if (found[_id] === undefined) { found[_id] = {}; }
+                      if (found[_id] === undefined) found[_id] = {};
                       found[_id][_provider] = url;
                     }
                   }
@@ -108,7 +108,7 @@ var Coce = {
                 count++;
             } else {
               console.log('  => found in redis URL');
-              if (found[_id] === undefined) { found[_id] = {}; }
+              if (found[_id] === undefined) found[_id] = {};
               found[_id][_provider] = reply;
               console.log(found);
               count++;
@@ -128,15 +128,12 @@ var Coce = {
       }
       console.log( count !== countMax ? 'Pas tout' : 'On a tout' );
       console.log('count = ' + count);
-      // On retourne les URL par ordre de priorité
+      // URL are picked up by provider priority order (request provider parameter)
       var ret = {};
       for (var id in found) {
         for (var j=0, provider; provider = providers[j]; j++) {
           var url = found[id][provider];
-          if (url !== undefined) {
-            ret[id] = url;
-            break;
-          }
+          if (url !== undefined) { ret[id] = url; break; }
         }
       }
       console.log(found);
@@ -150,7 +147,6 @@ var Coce = {
 };
 
 Coce.init();
-console.log(Coce.c);
 app.listen(Coce.c.port);
 
 app.get('/', function(req, res) {
