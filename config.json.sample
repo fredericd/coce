@@ -1,0 +1,13 @@
+{
+  "port": "8080",
+  "providers": ["gb","aws","ol"],
+  "timeout": 86400,
+  "aws": {
+     accessKeyId: 'xxxxxxxxxxxxxxxxxxxx',
+     secretAccessKey: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+     associateTag: 'xxxxxxxx',
+     imageSize: 'SmallImage'
+
+  }
+}
+
