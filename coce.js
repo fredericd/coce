@@ -185,45 +185,44 @@ UrlRepo.prototype.waitFetching = function(tick, timeout, finish) {
 };
 
 
-
-function GetCoverFromCache(req,res) {
-  var ids = req.query.id;
-  if (ids === undefined || ids.length < 8) {
-      res.send("id parameter is missing");
-      return;
-  }
-  ids = ids.split(',');
-  var providers = req.query.provider;
-  providers = providers == undefined ? config.providers : providers.split(',');
-
-  var repo = new UrlRepo(ids, providers);
-  repo.fetch();
-  console.log("fin boucle => count: " + repo.count);
-  
-  repo.waitFetching(5, 1000, function() {
-      console.log( repo.full() ? 'On a tout' : 'Pas tout' );
-      // URL are picked up by provider priority order (request provider parameter)
-      var ret = {};
-      for (var id in repo.url) {
-          for (var j=0, provider; provider = providers[j]; j++) {
-              var url = repo.url[id][provider];
-              if (url !== undefined) { ret[id] = url; break; }
-          }
-      }
-      var callback = req.query.callback;
-      res.send(callback == undefined
-               ? ret
-               : callback + '(' + JSON.stringify(ret) + ')' );
-  });
-}
+//
+// Web app
+//
 
 app.listen(config.port);
 
 app.get('/', function(req, res) {
-  res.send('Welcome to coce');
+    res.send('Welcome to coce');
 });
 
-app.get('/cover', GetCoverFromCache);
+app.get('/cover', function(req, res) {
+    var ids = req.query.id;
+    if (ids === undefined || ids.length < 8) {
+        res.send("id parameter is missing");
+        return;
+    }
+    ids = ids.split(',');
+    var providers = req.query.provider;
+    providers = providers == undefined ? config.providers : providers.split(',');
 
-
+    var repo = new UrlRepo(ids, providers);
+    repo.fetch();
+    console.log("fin boucle => count: " + repo.count);
+    
+    repo.waitFetching(5, 1000, function() {
+        console.log( repo.full() ? 'On a tout' : 'Pas tout' );
+        // URL are picked up by provider priority order (request provider parameter)
+        var ret = {};
+        for (var id in repo.url) {
+            for (var j=0, provider; provider = providers[j]; j++) {
+                var url = repo.url[id][provider];
+                if (url !== undefined) { ret[id] = url; break; }
+            }
+        }
+        var callback = req.query.callback;
+        res.send(callback == undefined
+                 ? ret
+                 : callback + '(' + JSON.stringify(ret) + ')' );
+    });
+});
 
