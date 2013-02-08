@@ -73,7 +73,7 @@ provider order:
 
 returns:
 
-`̀``json
+```json
 {
   "2847342257": "http://ecx.images-amazon.com/images/I/51LYLJRtthL._SL160_.jpg",
   "9780415480635": "http://bks3.books.google.com/books?id=Yc30cofv4_MC&printsec=frontcover&img=1&zoom=1",
