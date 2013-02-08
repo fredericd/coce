@@ -1,17 +1,16 @@
 var fs = require('fs');
 var redis = require('redis').createClient();
 var aws = require('aws-lib');
-var express = require('express');
 var http = require('http');
-var app = express();
 var util = require('util');
 
+
+
 var config = eval('('+fs.readFileSync('config.json','utf8')+')');
+exports.config = config;
+
 var awsProdAdv = aws.createProdAdvClient(config.aws.accessKeyId,
       config.aws.secretAccessKey, config.aws.associateTag);
-
-var regGb = new RegExp("(zoom=5)", "g");
-
 
 
 
@@ -24,7 +23,7 @@ var regGb = new RegExp("(zoom=5)", "g");
  * @param {Array} ids Array of images ID
  * @param {Array} providers Array of images providers (gb or aws)
  */
-function UrlRepo(ids, providers) {
+var UrlRepo = function(ids, providers) {
     this.ids = ids;
     this.providers = providers;
     this.count = 0;
@@ -36,8 +35,11 @@ function UrlRepo(ids, providers) {
      * @type Object
      */
     this.url = {};
-}
+};
+exports.UrlRepo = UrlRepo;
 
+
+UrlRepo.RegGb = new RegExp("(zoom=5)", "g");
 
 /**
  * Test if the repo contains all URLs for its IDs.
@@ -74,7 +76,7 @@ UrlRepo.prototype.gb = function(id) {
                 var url = _GBSBookInfo[id].thumbnail_url;
                 if ( url === undefined ) { continue; }
                 // get the medium size cover image
-                url = url.replace(regGb, 'zoom=1');
+                url = url.replace(UrlRepo.RegGb, 'zoom=1');
                 redis.setex(key, config.timeout, url);
                 if (repo.url[id] === undefined) repo.url[id] = {};
                 repo.url[id]['gb'] = url;
@@ -218,49 +220,4 @@ UrlRepo.prototype.waitFetching = function(tick, timeout, finish) {
     setTimeout(timer, 10);
 };
 
-
-//
-// Web app
-//
-
-app.listen(config.port);
-
-app.get('/', function(req, res) {
-    res.send('Welcome to coce');
-});
-
-app.get('/cover', function(req, res) {
-    var ids = req.query.id;
-    if (ids === undefined || ids.length < 8) {
-        res.send("id parameter is missing");
-        return;
-    }
-    ids = ids.split(',');
-    var providers = req.query.provider;
-    providers = providers == undefined ? config.providers : providers.split(',');
-
-    var repo = new UrlRepo(ids, providers);
-    repo.fetch();
-    console.log("fin boucle => count: " + repo.count);
-    
-    repo.waitFetching(5, 1000, function() {
-        console.log( repo.full() ? 'On a tout' : 'Pas tout' );
-        if ( req.query.all !== undefined ) {
-            res.send(repo.url);
-            return;
-        }
-        // URL are picked up by provider priority order (request provider parameter)
-        var ret = {};
-        for (var id in repo.url) {
-            for (var j=0, provider; provider = providers[j]; j++) {
-                var url = repo.url[id][provider];
-                if (url !== undefined) { ret[id] = url; break; }
-            }
-        }
-        var callback = req.query.callback;
-        res.send(callback == undefined
-                 ? ret
-                 : callback + '(' + JSON.stringify(ret) + ')' );
-    });
-});
 
