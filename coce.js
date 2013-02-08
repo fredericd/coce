@@ -25,17 +25,17 @@ var regGb = new RegExp("(zoom=5)", "g");
  * @param {Array} providers Array of images providers (gb or aws)
  */
 function UrlRepo(ids, providers) {
-  this.ids = ids;
-  this.providers = providers;
-  this.count = 0;
-  this.countMax = ids.length * providers.length;
+    this.ids = ids;
+    this.providers = providers;
+    this.count = 0;
+    this.countMax = ids.length * providers.length;
 
-  /**
-   * URLs found in the cache (or from providers)
-   * @property url
-   * @type Object
-   */
-  this.url = {};
+    /**
+     * URLs found in the cache (or from providers)
+     * @property url
+     * @type Object
+     */
+    this.url = {};
 }
 
 
@@ -45,7 +45,7 @@ function UrlRepo(ids, providers) {
  * @return {Boolean}
  */
 UrlRepo.prototype.full = function() {
-  return this.count === this.countMax;
+    return this.count === this.countMax;
 };
 
 
@@ -55,36 +55,36 @@ UrlRepo.prototype.full = function() {
  * @param {String} id The resource ID to request to Google Books
  */
 UrlRepo.prototype.gb = function(id) {
-  var repo = this;
-  var key = 'gb.' + id;
-  var opts = {
-    host: 'books.google.com',
-    port: 80,
-    path: "/books?bibkeys=" + id + "&jscmd=viewapi",
-  };
-  var req = http.get(opts, function(res) {
-    res.setEncoding('utf8');
-    var store = '';
-    res.on('data', function(data) { store += data });
-    res.on('end', function() {
-      //console.log(store);
-      eval(store);
-      //console.log(_GBSBookInfo);
-      for (var id in _GBSBookInfo) {
-        var url = _GBSBookInfo[id].thumbnail_url;
-        if ( url === undefined ) { continue; }
-        // get the medium size cover image
-        url = url.replace(regGb, 'zoom=1');
-        redis.setex(key, config.timeout, url);
-        if (repo.url[id] === undefined) repo.url[id] = {};
-        repo.url[id]['gb'] = url;
-        console.log('----------------------');
-        console.log(key +': ' + url);
-        //console.log(util.inspect(repo, false, null));
-      }
-      repo.count++;
+    var repo = this;
+    var key = 'gb.' + id;
+    var opts = {
+        host: 'books.google.com',
+        port: 80,
+        path: "/books?bibkeys=" + id + "&jscmd=viewapi",
+    };
+    var req = http.get(opts, function(res) {
+        res.setEncoding('utf8');
+        var store = '';
+        res.on('data', function(data) { store += data });
+        res.on('end', function() {
+            //console.log(store);
+            eval(store);
+            //console.log(_GBSBookInfo);
+            for (var id in _GBSBookInfo) {
+                var url = _GBSBookInfo[id].thumbnail_url;
+                if ( url === undefined ) { continue; }
+                // get the medium size cover image
+                url = url.replace(regGb, 'zoom=1');
+                redis.setex(key, config.timeout, url);
+                if (repo.url[id] === undefined) repo.url[id] = {};
+                repo.url[id]['gb'] = url;
+                console.log('----------------------');
+                console.log(key +': ' + url);
+                //console.log(util.inspect(repo, false, null));
+            }
+            repo.count++;
+        });
     });
-  });
 };
 
 
@@ -94,31 +94,31 @@ UrlRepo.prototype.gb = function(id) {
  * @param {String} id The resource ID to request to Amazon
  */
 UrlRepo.prototype.aws = function(id) {
-  var repo = this;
-  var options = { 
-    SearchIndex: 'All',
-    Keywords: id,
-    ResponseGroup: 'Images'
-  };
-  awsProdAdv.call('ItemSearch', options, function(err, result) {
-    //console.log(result.Items);
-    var items = result.Items;
-    if ( items.TotalResults > 0 ) {
-      var item = items.Item;
-      if (item instanceof Array) { item = item[0]; }
-      //console.log(util.inspect(item, false, null));
-      var url = item[config.aws.imageSize];
-      if (url !== undefined) { // Amazon has a cover image
-        var url = url.URL;
-        redis.setex('aws.'+id, config.timeout, url);
-        if (repo.url[id] === undefined) repo.url[id] = {};
-        repo.url[id]['aws'] = url;
-        //console.log('AWS added: ' + key + '=' + url);
-        //console.log(util.inspect(repo, false, null));
-      }
-    }
-    repo.count++;
-  });
+    var repo = this;
+    var options = { 
+        SearchIndex: 'All',
+        Keywords: id,
+        ResponseGroup: 'Images'
+    };
+    awsProdAdv.call('ItemSearch', options, function(err, result) {
+        //console.log(result.Items);
+        var items = result.Items;
+        if ( items.TotalResults > 0 ) {
+            var item = items.Item;
+            if (item instanceof Array) { item = item[0]; }
+            //console.log(util.inspect(item, false, null));
+            var url = item[config.aws.imageSize];
+            if (url !== undefined) { // Amazon has a cover image
+                var url = url.URL;
+                redis.setex('aws.'+id, config.timeout, url);
+                if (repo.url[id] === undefined) repo.url[id] = {};
+                repo.url[id]['aws'] = url;
+                //console.log('AWS added: ' + key + '=' + url);
+                //console.log(util.inspect(repo, false, null));
+            }
+        }
+        repo.count++;
+    });
 };
 
 
@@ -129,30 +129,30 @@ UrlRepo.prototype.aws = function(id) {
  * @param {String} provider (aws|gb) to search for
  */
 UrlRepo.prototype.add = function(id,provider) {
-  var repo = this;
-  var key = provider + '.' + id;
-  console.log('GET ' + key);
-  redis.get(key, function(err, reply) {
-    console.log('GET result: ' + key + ' ' + reply);
-    if ( reply === null ) {
-      // Not in the cache => search
-      redis.setex(key, config.timeout, '');
-      if ( provider == 'gb' || provider == 'aws' )
-        repo[provider](id);
-      else
-        repo.count++;
-    } else if ( reply === '' ) {
-        // In the cache, but not url via provider
-        console.log('  => url in redis NO URL');
-        repo.count++;
-    } else {
-      console.log('  => url in redis URL');
-      //console.log( repo.url);
-      if (repo.url[id] === undefined) repo.url[id] = {};
-      repo.url[id][provider] = reply;
-      repo.count++;
-    } 
-  });
+    var repo = this;
+    var key = provider + '.' + id;
+    console.log('GET ' + key);
+    redis.get(key, function(err, reply) {
+        console.log('GET result: ' + key + ' ' + reply);
+        if ( reply === null ) {
+            // Not in the cache => search
+            redis.setex(key, config.timeout, '');
+            if ( provider == 'gb' || provider == 'aws' )
+                repo[provider](id);
+            else
+                repo.count++;
+        } else if ( reply === '' ) {
+            // In the cache, but not url via provider
+            console.log('  => url in redis NO URL');
+            repo.count++;
+        } else {
+            console.log('  => url in redis URL');
+            //console.log( repo.url);
+            if (repo.url[id] === undefined) repo.url[id] = {};
+            repo.url[id][provider] = reply;
+            repo.count++;
+        } 
+    });
 };
 
 
@@ -189,8 +189,8 @@ UrlRepo.prototype.waitFetching = function(tick, timeout, finish) {
 function GetCoverFromCache(req,res) {
   var ids = req.query.id;
   if (ids === undefined || ids.length < 8) {
-    res.send("id parameter is missing");
-    return;
+      res.send("id parameter is missing");
+      return;
   }
   ids = ids.split(',');
   var providers = req.query.provider;
@@ -201,19 +201,19 @@ function GetCoverFromCache(req,res) {
   console.log("fin boucle => count: " + repo.count);
   
   repo.waitFetching(5, 1000, function() {
-    console.log( repo.full() ? 'On a tout' : 'Pas tout' );
-    // URL are picked up by provider priority order (request provider parameter)
-    var ret = {};
-    for (var id in repo.url) {
-      for (var j=0, provider; provider = providers[j]; j++) {
-        var url = repo.url[id][provider];
-        if (url !== undefined) { ret[id] = url; break; }
+      console.log( repo.full() ? 'On a tout' : 'Pas tout' );
+      // URL are picked up by provider priority order (request provider parameter)
+      var ret = {};
+      for (var id in repo.url) {
+          for (var j=0, provider; provider = providers[j]; j++) {
+              var url = repo.url[id][provider];
+              if (url !== undefined) { ret[id] = url; break; }
+          }
       }
-    }
-    var callback = req.query.callback;
-    res.send(callback == undefined
-             ? ret
-             : callback + '(' + JSON.stringify(ret) + ')' );
+      var callback = req.query.callback;
+      res.send(callback == undefined
+               ? ret
+               : callback + '(' + JSON.stringify(ret) + ')' );
   });
 }
 
