@@ -10,6 +10,7 @@ services to retrieve information on Books from an ID (ISBN for example).
 * [Google API](https://developers.google.com/books/docs/dynamic-links)
 * [Amazon Product Advertising
   API](https://affiliate-program.amazon.com/gp/advertising/api/detail/main.html)
+* [Open Library Read API](http://openlibrary.org/dev/docs/api/read)
 
 
 
@@ -27,4 +28,7 @@ services to retrieve information on Books from an ID (ISBN for example).
 
     cd _Coce HOME_
     node coce.js
+
+## Service
+
 

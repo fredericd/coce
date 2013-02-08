@@ -1,6 +1,5 @@
 var fs = require('fs');
-var _redis = require('redis');
-var redis = _redis.createClient();
+var redis = require('redis').createClient();
 var aws = require('aws-lib');
 var express = require('express');
 var http = require('http');
@@ -12,6 +11,7 @@ var awsProdAdv = aws.createProdAdvClient(config.aws.accessKeyId,
       config.aws.secretAccessKey, config.aws.associateTag);
 
 var regGb = new RegExp("(zoom=5)", "g");
+
 
 
 
@@ -89,6 +89,40 @@ UrlRepo.prototype.gb = function(id) {
 
 
 /**
+ * Retrieve an ID from Open Library
+ * @method ol
+ * @param {String} id The resource ID to request to Open Library
+ */
+UrlRepo.prototype.ol = function(id) {
+    var repo = this;
+    var key = 'ol.' + id;
+    var opts = {
+        host: 'openlibrary.org',
+        port: 80,
+        path: "/api/books?bibkeys=" + id + "&jscmd=data",
+    };
+    var req = http.get(opts, function(res) {
+        res.setEncoding('utf8');
+        var store = '';
+        res.on('data', function(data) { store += data });
+        res.on('end', function() {
+            eval(store);
+            //console.log(util.inspect(_OLBookInfo, false, null));
+            for (var id in _OLBookInfo) {
+                var url = _OLBookInfo[id].cover;
+                if ( url === undefined ) { continue; }
+                url = url[config.ol.imageSize];
+                redis.setex(key, config.timeout, url);
+                if (repo.url[id] === undefined) repo.url[id] = {};
+                repo.url[id]['ol'] = url;
+            }
+            repo.count++;
+        });
+    });
+};
+
+
+/**
  * Retrieve an ID from Amazon Product Advertising API
  * @method aws
  * @param {String} id The resource ID to request to Amazon
@@ -126,7 +160,7 @@ UrlRepo.prototype.aws = function(id) {
  * Retrieve an ID from a provider
  * @method add
  * @param {String} id ID
- * @param {String} provider (aws|gb) to search for
+ * @param {String} provider (aws|gb|ol) to search for
  */
 UrlRepo.prototype.add = function(id,provider) {
     var repo = this;
@@ -137,7 +171,7 @@ UrlRepo.prototype.add = function(id,provider) {
         if ( reply === null ) {
             // Not in the cache => search
             redis.setex(key, config.timeout, '');
-            if ( provider == 'gb' || provider == 'aws' )
+            if ( provider == 'gb' || provider == 'aws' || provider == 'ol' )
                 repo[provider](id);
             else
                 repo.count++;
@@ -211,6 +245,10 @@ app.get('/cover', function(req, res) {
     
     repo.waitFetching(5, 1000, function() {
         console.log( repo.full() ? 'On a tout' : 'Pas tout' );
+        if ( req.query.all !== undefined ) {
+            res.send(repo.url);
+            return;
+        }
         // URL are picked up by provider priority order (request provider parameter)
         var ret = {};
         for (var id in repo.url) {
