@@ -27,8 +27,11 @@ services to retrieve information on Books from an ID (ISBN for example).
 ## Start
 
     cd _Coce HOME_
-    node coce.js
+    node webservice.js
 
 ## Service
 
-
+    http://coce.server/cover?id=id1,id2,idn&provider=aws,gb,ol
+    http://coce.server/cover?id=id1,id2,idn&provider=aws,gb,ol&callback=myfunction
+    http://coce.server/cover?id=id1,id2,idn&provider=aws,gb,ol&all
+    http://coce.server/cover?id=id1,id2,idn&provider=aws,gb,ol&callback=myfunction&all

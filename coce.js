@@ -28,6 +28,8 @@ var UrlRepo = function(ids, providers) {
     this.providers = providers;
     this.count = 0;
     this.countMax = ids.length * providers.length;
+    this.timeoutId;
+    this.finish;
 
     /**
      * URLs found in the cache (or from providers)
@@ -40,15 +42,6 @@ exports.UrlRepo = UrlRepo;
 
 
 UrlRepo.RegGb = new RegExp("(zoom=5)", "g");
-
-/**
- * Test if the repo contains all URLs for its IDs.
- * @method full
- * @return {Boolean}
- */
-UrlRepo.prototype.full = function() {
-    return this.count === this.countMax;
-};
 
 
 /**
@@ -77,14 +70,13 @@ UrlRepo.prototype.gb = function(id) {
                 if ( url === undefined ) { continue; }
                 // get the medium size cover image
                 url = url.replace(UrlRepo.RegGb, 'zoom=1');
-                redis.setex(key, config.timeout, url);
+                redis.setex(key, config.gb.timeout, url);
                 if (repo.url[id] === undefined) repo.url[id] = {};
                 repo.url[id]['gb'] = url;
-                console.log('----------------------');
-                console.log(key +': ' + url);
+                //console.log(key +': ' + url);
                 //console.log(util.inspect(repo, false, null));
             }
-            repo.count++;
+            repo.increment();
         });
     });
 };
@@ -114,11 +106,11 @@ UrlRepo.prototype.ol = function(id) {
                 var url = _OLBookInfo[id].cover;
                 if ( url === undefined ) { continue; }
                 url = url[config.ol.imageSize];
-                redis.setex(key, config.timeout, url);
+                redis.setex(key, config.ol.timeout, url);
                 if (repo.url[id] === undefined) repo.url[id] = {};
                 repo.url[id]['ol'] = url;
             }
-            repo.count++;
+            repo.increment();
         });
     });
 };
@@ -146,15 +138,28 @@ UrlRepo.prototype.aws = function(id) {
             var url = item[config.aws.imageSize];
             if (url !== undefined) { // Amazon has a cover image
                 var url = url.URL;
-                redis.setex('aws.'+id, config.timeout, url);
+                redis.setex('aws.'+id, config.aws.timeout, url);
                 if (repo.url[id] === undefined) repo.url[id] = {};
                 repo.url[id]['aws'] = url;
                 //console.log('AWS added: ' + key + '=' + url);
                 //console.log(util.inspect(repo, false, null));
             }
         }
-        repo.count++;
+        repo.increment();
     });
+};
+
+
+/**
+ * Increment the count of found URLs. 
+ * Stop the timer if all URLs have been found.
+ */
+UrlRepo.prototype.increment = function() {
+    this.count++;
+    if (this.count === this.countMax) {
+        clearTimeout(this.timeoutId);
+        this.finish();
+    }
 };
 
 
@@ -169,24 +174,24 @@ UrlRepo.prototype.add = function(id,provider) {
     var key = provider + '.' + id;
     console.log('GET ' + key);
     redis.get(key, function(err, reply) {
-        console.log('GET result: ' + key + ' ' + reply);
+        console.log('GET result: ' + key);
         if ( reply === null ) {
             // Not in the cache => search
             redis.setex(key, config.timeout, '');
             if ( provider == 'gb' || provider == 'aws' || provider == 'ol' )
                 repo[provider](id);
             else
-                repo.count++;
+                repo.increment();
         } else if ( reply === '' ) {
             // In the cache, but not url via provider
-            console.log('  => url in redis NO URL');
-            repo.count++;
+            console.log('    NO URL in Redis');
+            repo.increment();
         } else {
-            console.log('  => url in redis URL');
+            console.log('    ' + reply);
             //console.log( repo.url);
             if (repo.url[id] === undefined) repo.url[id] = {};
             repo.url[id][provider] = reply;
-            repo.count++;
+            repo.increment();
         } 
     });
 };
@@ -194,30 +199,19 @@ UrlRepo.prototype.add = function(id,provider) {
 
 /**
  * Fetch all provided ID from cover image providers
+ * Wait for providers reponses, with a limitation of time
  * @method fetch
- */
-UrlRepo.prototype.fetch = function() {
-    for (var i=0; id = this.ids[i]; i++)
-        for (var j=0; provider = this.providers[j]; j++)
-            this.add(id, provider);
-};
-
-
-/**
- * Wait until URLs providers have finished responding or when too many time 
- * @method waitFetching
- * @param tick {int} Tick count for the timeout loop
- * @param timeout {int} Timeout duration
+ * @param timeout {int} Max duration of the fetching
  * @param finish {Function} Function to execute when all URLs are fetched or time has
  * elasped
  */
-UrlRepo.prototype.waitFetching = function(tick, timeout, finish) {
-    var repo = this;
-    var timer = function() {
-        if (--tick > 0 && !repo.full()) setTimeout(timer, timeout);
-        else                            finish();
-    };
-    setTimeout(timer, 10);
+UrlRepo.prototype.fetch = function(timeout, finish) {
+    this.finish = finish;
+    for (var i=0; id = this.ids[i]; i++)
+        for (var j=0; provider = this.providers[j]; j++)
+            this.add(id, provider);
+    if (this.count !== this.countMax)
+        this.timeoutId = setTimeout(finish, timeout);
 };
 
 

@@ -20,12 +20,9 @@ app.get('/cover', function(req, res) {
     providers = providers == undefined ? Coce.config.providers : providers.split(',');
 
     var repo = new coce.UrlRepo(ids, providers);
-    repo.fetch();
-    console.log("fin boucle => count: " + repo.count);
-    
-    repo.waitFetching(5, 1000, function() {
-        console.log( repo.full() ? 'On a tout' : 'Pas tout' );
+    repo.fetch(coce.config.timeout, function() {
         if ( req.query.all !== undefined ) {
+            // If &all param: returns all URLs
             res.send(repo.url);
             return;
         }
