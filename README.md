@@ -34,7 +34,7 @@ then Open Library): Coce send the first available URL.
 ```bash
     cd _Coce HOME_
     node webservice.js
-``̀`
+```
 
 ## Service usage
 
@@ -93,3 +93,4 @@ return:
 ```jsonp
     populateImg({"2847342257":"http://ecx.images-amazon.com/images/I/51LYLJRtthL._SL160_.jpg","9780415480635":"http://bks3.books.google.com/books?id=Yc30cofv4_MC&printsec=frontcover&img=1&zoom=1","9780821417492":"http://bks5.books.google.com/books?id=3vTqJ6ecRMIC&printsec=frontcover&img=1&zoom=1&edge=curl","9780563533191":"http://covers.openlibrary.org/b/id/2520432-M.jpg"})
 ```
+
