@@ -1,6 +1,7 @@
 var express = require('express');
 var app = express();
 var coce = require('./coce');
+var fetcher = new coce.CoceFetcher();
 
 
 app.listen(coce.config.port);
@@ -19,18 +20,17 @@ app.get('/cover', function(req, res) {
     var providers = req.query.provider;
     providers = providers == undefined ? Coce.config.providers : providers.split(',');
 
-    var repo = new coce.UrlRepo(ids, providers);
-    repo.fetch(coce.config.timeout, function() {
+    fetcher.fetch(ids, providers, coce.config.timeout, function(url) {
         if ( req.query.all !== undefined ) {
             // If &all param: returns all URLs
-            res.send(repo.url);
+            res.send(url);
             return;
         }
         // URL are picked up by provider priority order (request provider parameter)
         var ret = {};
-        for (var id in repo.url) {
+        for (var id in url) {
             for (var j=0, provider; provider = providers[j]; j++) {
-                var url = repo.url[id][provider];
+                var url = fetcher.url[id][provider];
                 if (url !== undefined) { ret[id] = url; break; }
             }
         }
