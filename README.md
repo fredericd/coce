@@ -21,19 +21,34 @@ then Open Library): Coce send the first available URL.
 
 ## Installation
 
-* Install and start a Redis server
+* Install and start a __Redis server__
 
-* Edit `config.json` file
-
-* Install node.js libraries:
+* Install __node.js libraries__:
  
         npm install express redis aws-lib util
+
+* __Configure__ Code operation by editing [config.json](https://github.com/fredericd/coce/blob/master/config.json.sample)
+  * `port` - port on which the server respond
+  * `providers` - array of available providers: gb,aws,ol
+  * `timeout` - timeout in miliseconds for the service. Above this value, Coce stops waiting response from providers
+  * `gb` - Google Books parameters:
+     * `timeout` - timeout of the cached URL from Google Books
+  * `ol` - Open Library parameters:
+     * `timeout` - timeout of the cached URL from Open Library. Affter this delay, an URL is automatically removed from the cache, and so has to be re-fetched again if requested
+     * `imageSize` - size of images: small, medium, large
+  * `aws` - Amazon parameters:
+     * `accessKeyId`
+     * ` secretAccessKey`
+     * `associateTag`
+     * `imageSize` - size of images: SmallImage, MediumImage, LargeImage
+
+
 
 ## Start
 
 ```bash
-    cd _Coce HOME_
-    node webservice.js
+cd _Coce HOME_
+node webservice.js
 ```
 
 ## Service usage
@@ -84,7 +99,6 @@ returns:
 ```
 
 By adding a callback JavaScript function to the request, Coce returns its result as JSONP:
-
 
     http://coce.server/cover?id=9780415480635,9780821417492,2847342257,9780563533191&provider=ol,gb,aws&callback=populateImg
 
