@@ -20,7 +20,7 @@ app.get('/cover', function(req, res) {
     var providers = req.query.provider;
     providers = providers == undefined ? Coce.config.providers : providers.split(',');
 
-    fetcher.fetch(ids, providers, coce.config.timeout, function(url) {
+    fetcher.fetch(ids, providers, function(url) {
         if ( req.query.all !== undefined ) {
             // If &all param: returns all URLs
             res.send(url);
@@ -30,8 +30,8 @@ app.get('/cover', function(req, res) {
         var ret = {};
         for (var id in url) {
             for (var j=0, provider; provider = providers[j]; j++) {
-                var url = fetcher.url[id][provider];
-                if (url !== undefined) { ret[id] = url; break; }
+                var u = url[id][provider];
+                if (u !== undefined) { ret[id] = u; break; }
             }
         }
         var callback = req.query.callback;

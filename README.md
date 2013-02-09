@@ -31,6 +31,10 @@ then Open Library): Coce send the first available URL.
   * `port` - port on which the server respond
   * `providers` - array of available providers: gb,aws,ol
   * `timeout` - timeout in miliseconds for the service. Above this value, Coce stops waiting response from providers
+  * `redis` - Redis server parameters:
+     * `host`
+     * `port`
+     * `timeout`
   * `gb` - Google Books parameters:
      * `timeout` - timeout of the cached URL from Google Books
   * `ol` - Open Library parameters:

@@ -1,5 +1,4 @@
 var fs = require('fs');
-var redis = require('redis').createClient();
 var aws = require('aws-lib');
 var http = require('http');
 var util = require('util');
@@ -8,6 +7,8 @@ var util = require('util');
 
 var config = eval('('+fs.readFileSync('config.json','utf8')+')');
 exports.config = config;
+
+var redis = require('redis').createClient(config.redis.port, config.redis.host);
 
 var awsProdAdv = aws.createProdAdvClient(config.aws.accessKeyId,
       config.aws.secretAccessKey, config.aws.associateTag);
@@ -20,8 +21,13 @@ var awsProdAdv = aws.createProdAdvClient(config.aws.accessKeyId,
  * @class CoceFetcher
  * @module coce
  * @constructor
+ * @param {int} timeout Timeout in miliseconds. After this delay, the fetching
+ * is aborted, even if some providers haven't yet responded. Without param, the
+ * timeout is retrieved from config.json file.
  */
-var CoceFetcher = function() {
+var CoceFetcher = function(timeout) {
+    if (timeout === undefined) timeout = config.timeout;
+    this.timeout = timeout;
     this.ids;
     this.providers;
     this.count = 0;
@@ -190,7 +196,7 @@ CoceFetcher.prototype.add = function(ids, provider) {
                 if ( reply === null ) {
                     // Not in the cache
                     notcached.push(id);
-                    redis.setex(provider+'.'+id, config.timeout, '');
+                    redis.setex(provider+'.'+id, config[provider].timeout, '');
                 } else if ( reply === '' ) {
                     // In the cache, but no url via provider
                     console.log('    NO URL in Redis');
@@ -215,7 +221,7 @@ CoceFetcher.prototype.add = function(ids, provider) {
      timeoutId = setTimeout(function(){
          console.log(notcached);
          if (notcached.length > 0) repo[provider](notcached);
-     }, 5000);
+     }, config.redis.timeout);
 };
 
 
@@ -229,7 +235,7 @@ CoceFetcher.prototype.add = function(ids, provider) {
  * @param finish {Function} Function to execute when all URLs are fetched or time has
  * elasped
  */
-CoceFetcher.prototype.fetch = function(ids, providers, timeout, finish) {
+CoceFetcher.prototype.fetch = function(ids, providers, finish) {
     this.count = 0;
     this.countMax = ids.length * providers.length;
     this.timeoutId;
@@ -244,7 +250,7 @@ CoceFetcher.prototype.fetch = function(ids, providers, timeout, finish) {
     for (var i=0; provider = providers[i]; i++)
         this.add(ids, provider);
     if (this.count !== this.countMax)
-        this.timeoutId = setTimeout(finish, timeout);
+        this.timeoutId = setTimeout(finish, this.timeout);
 };
 
 
