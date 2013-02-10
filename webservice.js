@@ -17,26 +17,22 @@ app.get('/cover', function(req, res) {
     ids = ids.split(',');
     var providers = req.query.provider;
     providers = providers == undefined ? coce.config.providers : providers.split(',');
+    var callback = req.query.callback;
 
     var fetcher = new coce.CoceFetcher();
     fetcher.fetch(ids, providers, function(url) {
-        if ( req.query.all !== undefined ) {
-            // If &all param: returns all URLs
-            res.send(url);
-            return;
+        if ( req.query.all === undefined ) {
+            // Not &all param: URL are picked up by provider priority order
+            var ret = {};
+            for (var id in url)
+                for (var j=0, provider; provider = providers[j]; j++) {
+                    var u = url[id][provider];
+                    if ( u !== undefined ) { ret[id] = u; break; }
+                }
+            url = ret;
         }
-        // URL are picked up by provider priority order (request provider parameter)
-        var ret = {};
-        for (var id in url) {
-            for (var j=0, provider; provider = providers[j]; j++) {
-                var u = url[id][provider];
-                if (u !== undefined) { ret[id] = u; break; }
-            }
-        }
-        var callback = req.query.callback;
-        res.send(callback == undefined
-                 ? ret
-                 : callback + '(' + JSON.stringify(ret) + ')' );
+        if (callback) url = callback + '(' + JSON.stringify(url) + ')'
+        res.send(url);
     });
 });
 

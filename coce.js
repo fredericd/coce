@@ -74,8 +74,7 @@ CoceFetcher.prototype.gb = function(ids) {
                 redis.setex('gb.'+id, config.gb.timeout, url);
                 if (repo.url[id] === undefined) repo.url[id] = {};
                 repo.url[id]['gb'] = url;
-                break;
-                //console.log(key +': ' + url);
+                //console.log('gb.'+id +': ' + url);
                 //console.log(util.inspect(repo, false, null));
             }
             repo.increment(ids.length);
@@ -105,7 +104,7 @@ CoceFetcher.prototype.ol = function(ids) {
             //console.log(util.inspect(_OLBookInfo, false, null));
             for (var id in _OLBookInfo) {
                 var url = _OLBookInfo[id].cover;
-                if ( url === undefined ) { continue; }
+                if (url === undefined) continue;
                 url = url[config.ol.imageSize];
                 redis.setex('ol.'+id, config.ol.timeout, url);
                 if (repo.url[id] === undefined) repo.url[id] = {};
