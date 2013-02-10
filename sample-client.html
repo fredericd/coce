@@ -1,0 +1,39 @@
+<html>
+  <head>
+    <title>Coce Client Sample</title>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+    <script>
+    $(document).ready(function(){
+       var ids = [];
+       $("[id^=coce-thumbnail]").each(function(i) {
+         ids.push($(this).attr("class"));
+       });
+       if (ids.length == 0) return;
+       ids = ids.join(',');
+       var coceURL = 'http://localhost:8080/cover?id=' + ids + '&provider=ol,gb,aws';
+       $.ajax({
+        url: coceURL,
+        dataType: 'jsonp',
+        success: function(urlPerID){
+          for (var id in urlPerID) {
+            var url = urlPerID[id];
+            $("[id^=coce-thumbnail]."+id).each(function() {
+              var img = document.createElement("img");
+              img.src = url;
+              img.title = url;
+              $(this).append(img); 
+           });    
+          }    
+        }   
+       });
+    });
+    </script>
+  </head>
+  <body>
+    <span class="2251005714" id="coce-thumbnail1"/></span>
+    <span class="9780415480635" id="coce-thumbnail2"></span>
+    <span class="9780821417492" id="coce-thumbnail3"></span>
+    <span class="2847342257" id="coce-thumbnail4"></span>
+    <span class="9780563533191"id="coce-thumbnail5"></span>
+  </body>
+</html>
