@@ -1,6 +1,6 @@
 # Coce
 
-A cover image cache exposing its content as a REST web service.
+A cover image URLs cache exposing its content as a REST web service.
 
 In various softwares (ILS for example), Book (or other kind of resources)
 cover image is displayed in front of the resource. Those images are fetched

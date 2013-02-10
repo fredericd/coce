@@ -4,7 +4,6 @@ var http = require('http');
 var util = require('util');
 
 
-
 var config = eval('('+fs.readFileSync('config.json','utf8')+')');
 exports.config = config;
 
@@ -52,7 +51,7 @@ CoceFetcher.RegGb = new RegExp("(zoom=5)", "g");
  * @method gb
  * @param {Array} ids The resource IDs to request to Google Books
  */
-coceFetcher.prototype.gb = function(ids) {
+CoceFetcher.prototype.gb = function(ids) {
     var repo = this;
     var opts = {
         host: 'books.google.com',
@@ -75,6 +74,7 @@ coceFetcher.prototype.gb = function(ids) {
                 redis.setex('gb.'+id, config.gb.timeout, url);
                 if (repo.url[id] === undefined) repo.url[id] = {};
                 repo.url[id]['gb'] = url;
+                break;
                 //console.log(key +': ' + url);
                 //console.log(util.inspect(repo, false, null));
             }
@@ -188,38 +188,39 @@ CoceFetcher.prototype.add = function(ids, provider) {
         (function(){
             var id = ids[i];
             var key = provider + '.' + ids[i];
-            console.log('Redis GET ' + key);
+            //console.log('Redis GET ' + key);
             redis.get(key, function(err, reply) {
-                console.log('Redis GET result: ' + key);
+                //console.log('Redis GET result: ' + key);
                 count--;
-                console.log('count=' + count);
+                //console.log('count=' + count);
                 if ( reply === null ) {
                     // Not in the cache
                     notcached.push(id);
                     redis.setex(provider+'.'+id, config[provider].timeout, '');
                 } else if ( reply === '' ) {
                     // In the cache, but no url via provider
-                    console.log('    NO URL in Redis');
+                    //console.log('    NO URL in Redis');
                     repo.increment();
                 } else {
-                    console.log('    ' + reply);
+                    //console.log('    ' + reply);
                     //console.log( repo.url);
                     if (repo.url[id] === undefined) repo.url[id] = {};
                     repo.url[id][provider] = reply;
                     repo.increment();
                 } 
                 if (count == 0 && timeoutId !== undefined) {
+                    // We get all responses from Redis
                     clearTimeout(timeoutId);
-                    console.log("Redis: all responses received. notcached="+notcached.length);
+                    //console.log("Redis: all responses received. notcached="+notcached.length);
                     if (notcached.length > 0) repo[provider](notcached);
                 }
             });
         }());
      }
      // Wait all Redis responses
-     console.log("Fin Redis query. count=" + count + " - Attente des réponses");
+     //console.log("Fin Redis queries. count=" + count + " - Attente des réponses");
      timeoutId = setTimeout(function(){
-         console.log(notcached);
+         //console.log(notcached);
          if (notcached.length > 0) repo[provider](notcached);
      }, config.redis.timeout);
 };

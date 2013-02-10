@@ -1,8 +1,6 @@
 var express = require('express');
 var app = express();
 var coce = require('./coce');
-var fetcher = new coce.CoceFetcher();
-
 
 app.listen(coce.config.port);
 
@@ -18,8 +16,9 @@ app.get('/cover', function(req, res) {
     }
     ids = ids.split(',');
     var providers = req.query.provider;
-    providers = providers == undefined ? Coce.config.providers : providers.split(',');
+    providers = providers == undefined ? coce.config.providers : providers.split(',');
 
+    var fetcher = new coce.CoceFetcher();
     fetcher.fetch(ids, providers, function(url) {
         if ( req.query.all !== undefined ) {
             // If &all param: returns all URLs
