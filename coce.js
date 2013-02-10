@@ -52,7 +52,7 @@ CoceFetcher.RegGb = new RegExp("(zoom=5)", "g");
  * @method gb
  * @param {Array} ids The resource IDs to request to Google Books
  */
-CoceFetcher.prototype.gb = function(ids) {
+coceFetcher.prototype.gb = function(ids) {
     var repo = this;
     var opts = {
         host: 'books.google.com',

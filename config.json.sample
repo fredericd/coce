@@ -3,23 +3,21 @@
   "providers": ["gb","aws","ol"],
   "timeout": 8000,
   "redis": {
-    host: 127.0.0.1,
-    port: 6379,
-    timeout: 5000
+    "host": "127.0.0.1",
+    "port": 6379,
+    "timeout": 5000
   },
   "gb": {
-    timeout: 86400
+    "timeout": 86400
   },
   "aws": {
-    timeout: 86400,
-    accessKeyId: 'xxxxxxxxxxxxxxxxxxxx',
-    secretAccessKey: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-    associateTag: 'xxxxxxxx',
-    imageSize: 'MediumImage'
+    "timeout": 86400,
+    "secretAccessKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "associateTag": "xxxxxxxx",
+    "imageSize": "xxxxxxxxxxx"
   },
   "ol": {
-    timeout: 86400,
-    imageSize: 'medium'
+    "timeout": 86400,
+    "imageSize": "medium"
   }
 }
-
