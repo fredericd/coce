@@ -124,6 +124,8 @@ CoceFetcher.prototype.ol = function(ids) {
 CoceFetcher.prototype.aws = function(ids) {
     var repo = this;
     var options = { 
+        host: config.aws.host,
+        region: config.aws.region,
         SearchIndex: 'All',
         ResponseGroup: 'Images'
     };
@@ -134,7 +136,7 @@ CoceFetcher.prototype.aws = function(ids) {
             var id = ids[i];
             options.Keywords = id;
             awsProdAdv.call('ItemSearch', options, function(err, result) {
-                //console.log(result.Items);
+                //console.log(util.inspect(result, false, null));
                 var items = result.Items;
                 if ( items.TotalResults > 0 ) {
                     var item = items.Item;

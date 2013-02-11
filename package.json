@@ -1,6 +1,6 @@
 {
   "name": "coce",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Resource cover image URLs cache server",
   "author":"Frédéric Demians <f.demians@tamil.fr>",
   "engines": {
