@@ -127,6 +127,7 @@ CoceFetcher.prototype.aws = function(ids) {
         host: config.aws.host,
         region: config.aws.region,
         SearchIndex: 'All',
+        IdType: 'EAN',
         ResponseGroup: 'Images'
     };
     // FIXME: A request per ID is sent to AWS. A better solution should send
@@ -134,14 +135,17 @@ CoceFetcher.prototype.aws = function(ids) {
     for (var i=0; i < ids.length; i++) {
         (function(){
             var id = ids[i];
-            options.Keywords = id;
-            awsProdAdv.call('ItemSearch', options, function(err, result) {
-                //console.log(util.inspect(result, false, null));
+            options.ItemId = id;
+            awsProdAdv.call('ItemLookup', options, function(err, result) {
+                console.log(util.inspect(result, false, null));
                 var items = result.Items;
-                if ( items.TotalResults > 0 ) {
+                if (items.Request.Errors ) {
+                    console.log('------- AWS Error --------');
+                    console.log(items.Request.Errors);
+                } else {
                     var item = items.Item;
                     if (item instanceof Array) { item = item[0]; }
-                    //console.log(util.inspect(item, false, null));
+                    console.log(util.inspect(item, false, null));
                     var url = item[config.aws.imageSize];
                     if (url !== undefined) { // Amazon has a cover image
                         var url = url.URL;

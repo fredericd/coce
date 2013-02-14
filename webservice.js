@@ -19,6 +19,8 @@ app.get('/cover', function(req, res) {
     ids = ids.split(',');
     var idsNew = [];
     for (id in ids) {
+        idsNew.push(ids[id]);
+        continue;
         if (isbnRE.test(ids[id])) {
             idsNew.push(ids[id]);
         } else console.log('non: '+ids[id]);
