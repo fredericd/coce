@@ -2,6 +2,7 @@
   <head>
     <title>Coce Client Sample</title>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+    <script src="coceclient.js"></script>
     <script>
     $(document).ready(function(){
        var ids = [];
@@ -9,22 +10,14 @@
          ids.push($(this).attr("class"));
        });
        if (ids.length == 0) return;
-       ids = ids.join(',');
-       var coceURL = 'http://localhost:8080/cover?id=' + ids + '&provider=ol,gb,aws';
-       $.ajax({
-        url: coceURL,
-        dataType: 'jsonp',
-        success: function(urlPerID){
-          for (var id in urlPerID) {
-            var url = urlPerID[id];
-            $("[id^=coce-thumbnail]."+id).each(function() {
-              var img = document.createElement("img");
-              img.src = url;
-              img.title = url;
-              $(this).append(img); 
-           });    
-          }    
-        }   
+       var coceClient = new CoceClient('http://localhost:8080', 'ol,gb,aws');
+       coceClient.fetch(ids, function(id, url) {
+         $("[id^=coce-thumbnail]."+id).each(function() {
+           var img = document.createElement("img");
+           img.src = url;
+           img.title = url;
+           $(this).append(img); 
+         });    
        });
     });
     </script>
