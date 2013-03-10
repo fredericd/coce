@@ -112,6 +112,18 @@ return:
     populateImg({"2847342257":"http://ecx.images-amazon.com/images/I/51LYLJRtthL._SL160_.jpg","9780415480635":"http://bks3.books.google.com/books?id=Yc30cofv4_MC&printsec=frontcover&img=1&zoom=1","9780821417492":"http://bks5.books.google.com/books?id=3vTqJ6ecRMIC&printsec=frontcover&img=1&zoom=1&edge=curl","9780563533191":"http://covers.openlibrary.org/b/id/2520432-M.jpg"})
 ```
 
+## Client-side usage
+
+See `sample-client.html` for a Coce sample usage from JavaScript. It uses `coceclient.js` module, which is use like this:
+
+```javascript
+// isbns is an array of ISBNs
+var coceClient = new CoceClient('http://coceserver.com:8080', 'ol,aws,gb');
+coceClient.fetch(isbns, function(isbn, url) {
+  $('#isbn_'+isbn).html('<img src="+url)+'"");
+});
+```
+
 ## Performance
 
 __coce__ is highly scalable. With all requested URLs in cache, ``ab`` test, 10000 requests, with 50 concurrent requests:
