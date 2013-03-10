@@ -44,6 +44,7 @@ app.get('/cover', function(req, res) {
             url = ret;
         }
         if (callback) url = callback + '(' + JSON.stringify(url) + ')'
+        res.contentType("application/x-javascript");
         res.send(url);
     });
 });
