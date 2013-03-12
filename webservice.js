@@ -8,7 +8,7 @@ app.get('/', function(req, res) {
     res.send('Welcome to coce');
 });
 
-var isbnRE = /[0-9X]{10,13}/;   
+var isbnRE = /([0-9X]{10,13})/;
 
 app.get('/cover', function(req, res) {
     var ids = req.query.id;
@@ -19,11 +19,12 @@ app.get('/cover', function(req, res) {
     ids = ids.split(',');
     var idsNew = [];
     for (id in ids) {
-        idsNew.push(ids[id]);
-        continue;
-        if (isbnRE.test(ids[id])) {
-            idsNew.push(ids[id]);
-        } else console.log('non: '+ids[id]);
+        var re;
+        if (re = isbnRE.exec(ids[id])) {
+            idsNew.push(re[1]);
+        } else {
+            //console.log('non: '+ids[id]);
+        }
     }
     ids = idsNew;
     if (ids.length === 0) { res.send('No id parameter'); return; }
