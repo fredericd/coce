@@ -126,8 +126,7 @@ CoceFetcher.prototype.aws = function(ids) {
     var options = { 
         host: config.aws.host,
         region: config.aws.region,
-        SearchIndex: 'All',
-        IdType: 'EAN',
+        SearchIndex: 'Blended',
         ResponseGroup: 'Images'
     };
     // FIXME: A request per ID is sent to AWS. A better solution should send
@@ -135,8 +134,8 @@ CoceFetcher.prototype.aws = function(ids) {
     for (var i=0; i < ids.length; i++) {
         (function(){
             var id = ids[i];
-            options.ItemId = id;
-            awsProdAdv.call('ItemLookup', options, function(err, result) {
+            options.Keywords = id;
+            awsProdAdv.call('ItemSearch', options, function(err, result) {
                 console.log(util.inspect(result, false, null));
                 var items = result.Items;
                 if (items.Request.Errors ) {
