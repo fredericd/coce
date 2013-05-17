@@ -34,6 +34,7 @@ app.get('/cover', function(req, res) {
 
     var fetcher = new coce.CoceFetcher();
     fetcher.fetch(ids, providers, function(url) {
+        res.contentType("application/x-javascript");
         if ( req.query.all === undefined ) {
             // Not &all param: URL are picked up by provider priority order
             var ret = {};
@@ -45,7 +46,6 @@ app.get('/cover', function(req, res) {
             url = ret;
         }
         if (callback) url = callback + '(' + JSON.stringify(url) + ')'
-        res.contentType("application/x-javascript");
         res.send(url);
     });
 });
