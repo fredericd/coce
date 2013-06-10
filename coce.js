@@ -123,36 +123,38 @@ CoceFetcher.prototype.ol = function(ids) {
  */
 CoceFetcher.prototype.aws = function(ids) {
     var repo = this;
-    var options = { 
-        host: config.aws.host,
-        region: config.aws.region,
-        SearchIndex: 'Blended',
-        ResponseGroup: 'Images'
-    };
     // FIXME: A request per ID is sent to AWS. A better solution should send
     // grouped queries. But difficult to achieve with AWS API.
     for (var i=0; i < ids.length; i++) {
         (function(){
             var id = ids[i];
+            var options = { 
+                host: config.aws.host,
+                region: config.aws.region,
+                SearchIndex: 'Blended',
+                ResponseGroup: 'Images'
+            };
             options.Keywords = id;
             awsProdAdv.call('ItemSearch', options, function(err, result) {
                 console.log(util.inspect(result, false, null));
                 var items = result.Items;
-                if (items.Request.Errors ) {
-                    console.log('------- AWS Error --------');
-                    console.log(items.Request.Errors);
-                } else {
-                    var item = items.Item;
-                    if (item instanceof Array) { item = item[0]; }
-                    console.log(util.inspect(item, false, null));
-                    var url = item[config.aws.imageSize];
-                    if (url !== undefined) { // Amazon has a cover image
-                        var url = url.URL;
-                        redis.setex('aws.'+id, config.aws.timeout, url);
-                        if (repo.url[id] === undefined) repo.url[id] = {};
-                        repo.url[id]['aws'] = url;
-                        //console.log('AWS added: ' + key + '=' + url);
-                        //console.log(util.inspect(repo, false, null));
+                if (items) {
+                    if (items.Request.Errors ) {
+                        console.log('------- AWS Error --------');
+                        console.log(items.Request.Errors);
+                    } else {
+                        var item = items.Item;
+                        if (item instanceof Array) { item = item[0]; }
+                        console.log(util.inspect(item, false, null));
+                        var url = item[config.aws.imageSize];
+                        if (url !== undefined) { // Amazon has a cover image
+                            var url = url.URL;
+                            redis.setex('aws.'+id, config.aws.timeout, url);
+                            if (repo.url[id] === undefined) repo.url[id] = {};
+                            repo.url[id]['aws'] = url;
+                            //console.log('AWS added: ' + key + '=' + url);
+                            //console.log(util.inspect(repo, false, null));
+                        }
                     }
                 }
                 repo.increment();
