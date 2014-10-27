@@ -136,7 +136,7 @@ CoceFetcher.prototype.aws = function(ids) {
             };
             options.Keywords = id;
             awsProdAdv.call('ItemSearch', options, function(err, result) {
-                console.log(util.inspect(result, false, null));
+                //console.log(util.inspect(result, false, null));
                 var items = result.Items;
                 if (items) {
                     if (items.Request.Errors ) {
@@ -144,16 +144,20 @@ CoceFetcher.prototype.aws = function(ids) {
                         console.log(items.Request.Errors);
                     } else {
                         var item = items.Item;
-                        if (item instanceof Array) { item = item[0]; }
-                        console.log(util.inspect(item, false, null));
-                        var url = item[config.aws.imageSize];
-                        if (url !== undefined) { // Amazon has a cover image
-                            var url = url.URL;
-                            redis.setex('aws.'+id, config.aws.timeout, url);
-                            if (repo.url[id] === undefined) repo.url[id] = {};
-                            repo.url[id]['aws'] = url;
-                            //console.log('AWS added: ' + key + '=' + url);
-                            //console.log(util.inspect(repo, false, null));
+                        items = item instanceof Array ? item : [ item ];
+                        //console.log(util.inspect(item, false, null));
+                        for (var i in items) {
+                            item = items[i];
+                            var url = item[config.aws.imageSize];
+                            if (url !== undefined) { // Amazon has a cover image
+                                var url = url.URL;
+                                redis.setex('aws.'+id, config.aws.timeout, url);
+                                if (repo.url[id] === undefined) repo.url[id] = {};
+                                repo.url[id]['aws'] = url;
+                                //console.log('AWS added: ' + key + '=' + url);
+                                //console.log(util.inspect(repo, false, null));
+                                break;
+                            }
                         }
                     }
                 }
