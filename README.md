@@ -23,6 +23,8 @@ then Open Library): Coce send the first available URL.
 
 * Install and start a __Redis server__
 
+* Install [node.js](http://nodejs.org/)
+
 * Install __node.js libraries__:
  
         npm install express redis aws-lib util
@@ -54,6 +56,21 @@ then Open Library): Coce send the first available URL.
 cd _Coce HOME_
 node webservice.js
 ```
+
+## Deployment on a production server
+
+By default, running Coce directly, there isn't any supervision mechanism, and
+Coce run as a single process (as any node.js application). In production, it
+is necessary to transform Coce into a Linux service, with automatic
+start/stop, and supervision. Usual Unix technics could be used: [Unix System V
+Init](http://en.wikipedia.org/wiki/Init), [runit](http://smarden.org/runit/),
+or [daemon](http://man7.org/linux/man-pages/man3/daemon.3.html).
+
+A more sophisticated approach could be utilised by using [Phusion
+Passenger](https://www.phusionpassenger.com/) to deploy Coce. This way it's
+possible to make Coce respond to requests on http (80) port, even with other
+webapps running on the same server, and to run a Coce process on each core of a
+multi-core server.
 
 ## Service usage
 
