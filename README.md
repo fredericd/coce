@@ -25,9 +25,9 @@ then Open Library): Coce send the first available URL.
 
 * Install [node.js](http://nodejs.org/)
 
-* Install __node.js libraries__:
+* Install __node.js libraries__. In Coce home directory, enter:
  
-        npm install express redis aws-lib util
+        npm install
 
 * __Configure__ Code operation by editing [config.json](https://github.com/fredericd/coce/blob/master/config.json.sample)
   * `port` - port on which the server respond
@@ -40,7 +40,7 @@ then Open Library): Coce send the first available URL.
   * `gb` - Google Books parameters:
      * `timeout` - timeout of the cached URL from Google Books
   * `ol` - Open Library parameters:
-     * `timeout` - timeout of the cached URL from Open Library. Affter this delay, an URL is automatically removed from the cache, and so has to be re-fetched again if requested
+     * `timeout` - timeout of the cached URL from Open Library. After this delay, an URL is automatically removed from the cache, and so has to be re-fetched again if requested
      * `imageSize` - size of images: small, medium, large
   * `aws` - Amazon parameters:
      * `accessKeyId`
@@ -54,23 +54,25 @@ then Open Library): Coce send the first available URL.
 
 ```bash
 cd _Coce HOME_
-node webservice.js
+node app.js
 ```
 
 ## Deployment on a production server
 
 By default, running Coce directly, there isn't any supervision mechanism, and
-Coce run as a single process (as any node.js application). In production, it
-is necessary to transform Coce into a Linux service, with automatic
-start/stop, and supervision. Usual Unix technics could be used: [Unix System V
+Coce run as a multi-threaded single process (as any node.js application). In
+production, it is necessary to transform Coce into a Linux service, with
+automatic start/stop, and supervision. Traditional Unix process supervision
+architecture could be used: [Unix System V
 Init](http://en.wikipedia.org/wiki/Init), [runit](http://smarden.org/runit/),
-or [daemon](http://man7.org/linux/man-pages/man3/daemon.3.html).
+or [daemon](http://man7.org/linux/man- pages/man3/daemon.3.html).
 
 A more sophisticated approach could be utilised by using [Phusion
-Passenger](https://www.phusionpassenger.com/) to deploy Coce. This way it's
-possible to make Coce respond to requests on http (80) port, even with other
-webapps running on the same server, and to run a Coce process on each core of a
-multi-core server.
+Passenger](https://www.phusionpassenger.com/). This way, it's possible to make
+Coce respond to requests on http (80) port, even with other webapps running on
+the same server, and to run a Coce process on each core of a multi-core
+server.
+
 
 ## Service usage
 

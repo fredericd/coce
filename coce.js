@@ -136,27 +136,36 @@ CoceFetcher.prototype.aws = function(ids) {
             };
             options.Keywords = id;
             awsProdAdv.call('ItemSearch', options, function(err, result) {
-                //console.log(util.inspect(result, false, null));
-                var items = result.Items;
-                if (items) {
-                    if (items.Request.Errors ) {
-                        console.log('------- AWS Error --------');
-                        console.log(items.Request.Errors);
+                if ( result.Error ) {
+                    if ( result.Error.Code == 'RequestThrottled' ) {
+                        console.log('ID ' + id + ' not found on AWS because Throttling');
+                        redis.del('aws.'+id);
                     } else {
-                        var item = items.Item;
-                        items = item instanceof Array ? item : [ item ];
-                        //console.log(util.inspect(item, false, null));
-                        for (var i in items) {
-                            item = items[i];
-                            var url = item[config.aws.imageSize];
-                            if (url !== undefined) { // Amazon has a cover image
-                                var url = url.URL;
-                                redis.setex('aws.'+id, config.aws.timeout, url);
-                                if (repo.url[id] === undefined) repo.url[id] = {};
-                                repo.url[id]['aws'] = url;
-                                //console.log('AWS added: ' + key + '=' + url);
-                                //console.log(util.inspect(repo, false, null));
-                                break;
+                        console.log(util.inspect(result.Error, false, null));
+                    }
+                } else {
+                    var items = result.Items;
+                    if (items) {
+                        if (items.Request.Errors ) {
+                            // No match = no item found in AWS
+                            //console.log('------- AWS Error --------');
+                            //console.log(items.Request.Errors);
+                        } else {
+                            var item = items.Item;
+                            items = item instanceof Array ? item : [ item ];
+                            //console.log(util.inspect(item, false, null));
+                            for (var i in items) {
+                                item = items[i];
+                                var url = item[config.aws.imageSize];
+                                if (url !== undefined) { // Amazon has a cover image
+                                    var url = url.URL;
+                                    redis.setex('aws.'+id, config.aws.timeout, url);
+                                    if (repo.url[id] === undefined) repo.url[id] = {};
+                                    repo.url[id]['aws'] = url;
+                                    //console.log('AWS added: ' + key + '=' + url);
+                                    //console.log(util.inspect(repo, false, null));
+                                    break;
+                                }
                             }
                         }
                     }
