@@ -29,7 +29,7 @@ then Open Library): Coce send the first available URL.
  
         npm install
 
-* __Configure__ Code operation by editing [config.json](https://github.com/fredericd/coce/blob/master/config.json.sample)
+* __Configure__ Coce operation by editing [config.json](https://github.com/fredericd/coce/blob/master/config.json.sample). Start with config.json.sample file.
   * `port` - port on which the server respond
   * `providers` - array of available providers: gb,aws,ol
   * `timeout` - timeout in miliseconds for the service. Above this value, Coce stops waiting response from providers
@@ -42,9 +42,9 @@ then Open Library): Coce send the first available URL.
   * `ol` - Open Library parameters:
      * `timeout` - timeout of the cached URL from Open Library. After this delay, an URL is automatically removed from the cache, and so has to be re-fetched again if requested
      * `imageSize` - size of images: small, medium, large
-  * `aws` - Amazon parameters:
+  * `aws` - Amazon parameters. In order to use AWS, you need to create a [credential](http://docs.aws.amazon.com/IAM/latest/UserGuide/ManagingCredentials.html). Create a user and give him credential to [Amazon Product Advertising API](http://docs.aws.amazon.com/AWSECommerceService/latest/DG/Welcome.html):
      * `accessKeyId`
-     * ` secretAccessKey`
+     * `secretAccessKey`
      * `associateTag`
      * `imageSize` - size of images: SmallImage, MediumImage, LargeImage
 
