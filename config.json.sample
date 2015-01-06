@@ -12,9 +12,10 @@
   },
   "aws": {
     "timeout": 86400,
+    "accessKeyId": "xxxxxxxxxxxxxxxxxxxx",
     "secretAccessKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
     "associateTag": "xxxxxxxx",
-    "imageSize": "xxxxxxxxxxx"
+    "imageSize": "MediumSize"
   },
   "ol": {
     "timeout": 86400,
