@@ -29,7 +29,7 @@ then Open Library): Coce send the first available URL.
  
         npm install
 
-* __Configure__ Coce operation by editing [config.json](https://github.com/fredericd/coce/blob/master/config.json.sample). Start with config.json.sample file.
+* __Configure__ Coce operation by editing [config.json](https://github.com/fredericd/coce/blob/master/config.json.sample). Start with provided `config.json.sample` file.
   * `port` - port on which the server respond
   * `providers` - array of available providers: gb,aws,ol
   * `timeout` - timeout in miliseconds for the service. Above this value, Coce stops waiting response from providers
@@ -77,12 +77,14 @@ For example, on Debian follow this [instructions](https://www.phusionpassenger
 .com/documentation/Users%20guide%20Standalone.html#install_on_debian_ubuntu).
 And start, coce, beeing in coce directory:
 
-  passenger start --port 8080
-
+```bash
+passenger start --port 8080
+```
 Daemonize:
 
-  passenger start --port 8080 --daemonize
-
+```bash
+passenger start --port 8080 --daemonize
+```
 
 ## Service usage
 
