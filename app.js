@@ -13,7 +13,9 @@ var isbnRE = /([0-9X]{10,13})/;
 app.get('/cover', function(req, res) {
     var ids = req.query.id;
     if (ids === undefined || ids.length < 8) {
-        res.send("id parameter is missing");
+	var fail = {};
+	fail.error = "ID parameter is missing";
+        res.send(fail);
         return;
     }
     ids = ids.split(',');
@@ -27,7 +29,12 @@ app.get('/cover', function(req, res) {
         }
     }
     ids = idsNew;
-    if (ids.length === 0) { res.send('No id parameter'); return; }
+    if (ids.length === 0) { 
+	var fail = {};
+	fail.error = "Bad id parameter";
+	res.send(fail);
+	return;
+    }
     var providers = req.query.provider;
     providers = providers == undefined ? coce.config.providers : providers.split(',');
     var callback = req.query.callback;
