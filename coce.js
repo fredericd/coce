@@ -1,6 +1,7 @@
 var fs = require('fs');
 var aws = require('aws-lib');
 var http = require('http');
+var https = require('https');
 var util = require('util');
 
 
@@ -55,10 +56,10 @@ CoceFetcher.prototype.gb = function(ids) {
     var repo = this;
     var opts = {
         host: 'books.google.com',
-        port: 80,
-        path: "/books?bibkeys=" + ids.join(',') + "&jscmd=viewapi",
+        port: 443,
+        path: "/books?bibkeys=" + ids.join(',') + "&jscmd=viewapi&amp;hl=en",
     };
-    var req = http.get(opts, function(res) {
+    var req = https.get(opts, function(res) {
         res.setEncoding('utf8');
         var store = '';
         res.on('data', function(data) { store += data });
