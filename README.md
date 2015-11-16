@@ -73,8 +73,8 @@ Coce respond to requests on http (80) port, even with other webapps running on
 the same server, and to run a Coce process on each core of a multi-core
 server.
 
-For example, on Debian follow this [instructions](https://www.phusionpassenger
-.com/documentation/Users%20guide%20Standalone.html#install_on_debian_ubuntu).
+For example, on Debian follow this
+[instructions](https://www.phusionpassenger.com/library/install/standalone/install/oss/).
 And start, coce, beeing in coce directory:
 
 ```bash
