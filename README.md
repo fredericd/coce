@@ -86,6 +86,9 @@ Daemonize:
 passenger start --port 8080 --daemonize
 ```
 
+Since passenger manages the service restart automatically, the service startup can just be
+put in `/etc/rc.local` on various Linux distributions.
+
 ## Service usage
 
 To get all cover images from Open Library (ol), Google Books (gb), and Amazon
