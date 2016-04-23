@@ -47,6 +47,7 @@ exports.CoceFetcher = CoceFetcher;
 CoceFetcher.RegGb = new RegExp("(zoom=5)", "g");
 
 
+
 /**
  * Retrieve an ID from Google Books 
  * @method gb
@@ -160,6 +161,7 @@ CoceFetcher.prototype.aws = function(ids) {
                                 var url = item[config.aws.imageSize];
                                 if (url !== undefined) { // Amazon has a cover image
                                     var url = url.URL;
+                                    url = url.replace('http://ecx.images-amazon.com','https://images-na.ssl-images-amazon.com');
                                     redis.setex('aws.'+id, config.aws.timeout, url);
                                     if (repo.url[id] === undefined) repo.url[id] = {};
                                     repo.url[id]['aws'] = url;
