@@ -101,20 +101,20 @@ This request returns:
 ```json
 {
   "2847342257": {
-    "aws": "http://ecx.images-amazon.com/images/I/51LYLJRtthL._SL160_.jpg"
-  },
-  "9780415480635": {
-    "gb": "http://bks3.books.google.com/books?id=Yc30cofv4_MC&printsec=frontcover&img=1&zoom=1",
-    "aws": "http://ecx.images-amazon.com/images/I/41G7N7fSFvL._SL160_.jpg"
-  },
-  "9780821417492": {
-    "gb": "http://bks5.books.google.com/books?id=3vTqJ6ecRMIC&printsec=frontcover&img=1&zoom=1&edge=curl",
-    "aws": "http://ecx.images-amazon.com/images/I/417jg7TjvYL._SL160_.jpg"
+    "aws": "https://images-na.ssl-images-amazon.com/images/I/51LYLJRtthL._SL160_.jpg"
   },
   "9780563533191": {
-    "ol": "http://covers.openlibrary.org/b/id/2520432-M.jpg",
-    "gb": "http://bks0.books.google.com/books?id=OphMAAAACAAJ&printsec=frontcover&img=1&zoom=1",
-    "aws": "http://ecx.images-amazon.com/images/I/412CFNG0QEL._SL160_.jpg"
+    "ol": "https://covers.openlibrary.org/b/id/2520432-M.jpg",
+    "gb": "https://books.google.com/books/content?id=OphMAAAACAAJ&printsec=frontcover&img=1&zoom=1",
+    "aws": "https://images-na.ssl-images-amazon.com/images/I/412CFNG0QEL._SL160_.jpg"
+  },
+  "9780415480635": {
+    "gb": "https://books.google.com/books/content?id=Yc30cofv4_MC&printsec=frontcover&img=1&zoom=1",
+    "aws": "https://images-na.ssl-images-amazon.com/images/I/41HOtyaxTlL._SL160_.jpg"
+  },
+  "9780821417492": {
+    "gb": "https://books.google.com/books/content?id=D5yimAEACAAJ&printsec=frontcover&img=1&zoom=1",
+    "aws": "https://images-na.ssl-images-amazon.com/images/I/417jg7TjvYL._SL160_.jpg"
   }
 }
 ```
@@ -128,12 +128,11 @@ returns:
 
 ```json
 {
-  "2847342257": "http://ecx.images-amazon.com/images/I/51LYLJRtthL._SL160_.jpg",
-  "9780415480635": "http://bks3.books.google.com/books?id=Yc30cofv4_MC&printsec=frontcover&img=1&zoom=1",
-  "9780821417492": "http://bks5.books.google.com/books?id=3vTqJ6ecRMIC&printsec=frontcover&img=1&zoom=1&edge=curl",
-  "9780563533191": "http://covers.openlibrary.org/b/id/2520432-M.jpg"
+  "2847342257": "https://images-na.ssl-images-amazon.com/images/I/51LYLJRtthL._SL160_.jpg",
+  "9780563533191": "https://covers.openlibrary.org/b/id/2520432-M.jpg",
+  "9780415480635": "https://books.google.com/books/content?id=Yc30cofv4_MC&printsec=frontcover&img=1&zoom=1",
+  "9780821417492": "https://books.google.com/books/content?id=D5yimAEACAAJ&printsec=frontcover&img=1&zoom=1"
 }
-
 ```
 
 By adding a callback JavaScript function to the request, Coce returns its result as JSONP:
@@ -143,7 +142,7 @@ By adding a callback JavaScript function to the request, Coce returns its result
 return:
 
 ```jsonp
-    populateImg({"2847342257":"http://ecx.images-amazon.com/images/I/51LYLJRtthL._SL160_.jpg","9780415480635":"http://bks3.books.google.com/books?id=Yc30cofv4_MC&printsec=frontcover&img=1&zoom=1","9780821417492":"http://bks5.books.google.com/books?id=3vTqJ6ecRMIC&printsec=frontcover&img=1&zoom=1&edge=curl","9780563533191":"http://covers.openlibrary.org/b/id/2520432-M.jpg"})
+populateImg({"2847342257":"https://images-na.ssl-images-amazon.com/images/I/51LYLJRtthL._SL160_.jpg","9780563533191":"https://covers.openlibrary.org/b/id/2520432-M.jpg","9780415480635":"https://books.google.com/books/content?id=Yc30cofv4_MC&printsec=frontcover&img=1&zoom=1","9780821417492":"https://books.google.com/books/content?id=D5yimAEACAAJ&printsec=frontcover&img=1&zoom=1"})
 ```
 
 ## Client-side usage
