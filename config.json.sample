@@ -11,6 +11,7 @@
     "timeout": 86400
   },
   "aws": {
+    "host": "webservices.amazon.fr",
     "timeout": 86400,
     "accessKeyId": "xxxxxxxxxxxxxxxxxxxx",
     "secretAccessKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
