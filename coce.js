@@ -10,8 +10,10 @@ exports.config = config;
 
 var redis = require('redis').createClient(config.redis.port, config.redis.host);
 
-var awsProdAdv = aws.createProdAdvClient(config.aws.accessKeyId,
-      config.aws.secretAccessKey, config.aws.associateTag);
+var awsProdAdv = aws.createProdAdvClient(
+    config.aws.accessKeyId,
+    config.aws.secretAccessKey, config.aws.associateTag, config.aws
+);
 
 
 

@@ -43,6 +43,7 @@ then Open Library): Coce send the first available URL.
      * `timeout` - timeout of the cached URL from Open Library. After this delay, an URL is automatically removed from the cache, and so has to be re-fetched again if requested
      * `imageSize` - size of images: small, medium, large
   * `aws` - Amazon parameters. In order to use AWS, you need to create a [credential](http://docs.aws.amazon.com/IAM/latest/UserGuide/ManagingCredentials.html). Create a user and give him credential to [Amazon Product Advertising API](http://docs.aws.amazon.com/AWSECommerceService/latest/DG/Welcome.html):
+     * `host` - The API is available for several locales. If omitted, USA by default. For France: webservices.amazon.fr. See the [List of locales](http://docs.aws.amazon.com/AWSECommerceService/latest/DG/Locales.html).
      * `accessKeyId`
      * `secretAccessKey`
      * `associateTag`
