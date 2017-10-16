@@ -42,13 +42,14 @@ then Open Library): Coce send the first available URL.
   * `ol` - Open Library parameters:
      * `timeout` - timeout of the cached URL from Open Library. After this delay, an URL is automatically removed from the cache, and so has to be re-fetched again if requested
      * `imageSize` - size of images: small, medium, large
-  * `aws` - Amazon parameters. In order to use AWS, you need to create a [credential](http://docs.aws.amazon.com/IAM/latest/UserGuide/ManagingCredentials.html). Create a user and give him credential to [Amazon Product Advertising API](http://docs.aws.amazon.com/AWSECommerceService/latest/DG/Welcome.html):
+  * `aws` - Amazon AWS parameters. In order to use AWS, you need to create a [credential](http://docs.aws.amazon.com/IAM/latest/UserGuide/ManagingCredentials.html). Create a user and give him credential to [Amazon Product Advertising API](http://docs.aws.amazon.com/AWSECommerceService/latest/DG/Welcome.html). Alternatively, you can get Amazon cover images using a simpler http method, not requiring a credential.
+     * `method` - service|http. If using http, `timeout` parameter is required, and none of any others.
      * `host` - The API is available for several locales. If omitted, USA by default. For France: webservices.amazon.fr. See the [List of locales](http://docs.aws.amazon.com/AWSECommerceService/latest/DG/Locales.html).
      * `accessKeyId`
      * `secretAccessKey`
      * `associateTag`
      * `imageSize` - size of images: SmallImage, MediumImage, LargeImage
-
+     * `timeout` - timeout when probing images url via direct http requests
 
 
 ## Start

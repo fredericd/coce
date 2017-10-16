@@ -18,6 +18,9 @@
     "associateTag": "xxxxxxxx",
     "imageSize": "MediumSize"
   },
+  "amazon": {
+    "timeout": 86400
+  },
   "ol": {
     "timeout": 86400,
     "imageSize": "medium"
