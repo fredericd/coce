@@ -81,12 +81,13 @@ var aws_http = function(ids) {
             headers: {'user-agent': 'Mozilla/5.0'},
             path: '/images/P/' + search + '.01.MZZZZZZZZZ.jpg',
         };
-        //console.log('get ' + id);
+        console.log('get ' + id);
         var req = https.get(opts, function(res) {
             var url = 'https://' + opts.hostname + opts.path;
             //console.log(id + ' response = ' + res.statusCode);
             //console.log(url);
             if (res.statusCode == 200 || res.statusCode == 403) {
+                console.log('retour ' + id + ' status code = ' + res.statusCode);
                 if (repo.url[id] === undefined) repo.url[id] = {};
                 //console.log('url = ' + url);
                 redis.setex('aws.'+id, config.aws.timeout, url);
