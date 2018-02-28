@@ -181,6 +181,36 @@ CoceFetcher.prototype.aws = function(ids) {
     }
 };
 
+/**
+ * Check amazon static urls for existence
+ * @method asu
+ * @param {Array} ids The resource IDs to check on Amazon
+ */
+CoceFetcher.prototype.asu = function(ids) {
+    var repo = this;
+    // We check the url for each id and add it if there is something there.
+    for (var i=0; i < ids.length; i++) {
+        (function(){
+            var id = ids[i];
+            var opts = { 
+                host: 'images-na.ssl-images-amazon.com',
+                port: 443,
+                path: "/images/P/"+id+".01.MZZZZZZZ.jpg",
+            };
+            var req = https.get(opts, function(res) {
+                var store = ''; 
+                res.on('data', function(data) { store += data }); 
+                res.on('end', function() {
+                    url = "https://images-na.ssl-images-amazon.com/images/P/"+id+".01.MZZZZZZZ.jpg";
+                    redis.setex('asu.'+id, config.asu.timeout, url);
+                    if (repo.url[id] === undefined) repo.url[id] = {};.
+                    repo.url[id]['asu'] = url;
+                    repo.increment();
+                });
+            });
+        }());
+    }
+};
 
 /**
  * Increment the count of found URLs. 
