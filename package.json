@@ -2,9 +2,9 @@
   "name": "coce",
   "version": "0.2.8",
   "description": "Resource cover image URLs cache server",
-  "author":"Frédéric Demians <f.demians@tamil.fr>",
+  "author": "Frédéric Demians <f.demians@tamil.fr>",
   "engines": {
-    "node" : ">=0.4.0"
+    "node": ">=0.4.0"
   },
   "dependencies": {
     "express": "3.x",
@@ -12,7 +12,7 @@
     "aws-lib": "0.2.0"
   },
   "repository": {
-    "type":"git",
-    "url":"https://github.com/fredericd/coce"
+    "type": "git",
+    "url": "https://github.com/fredericd/coce"
   }
 }
