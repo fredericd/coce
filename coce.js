@@ -1,20 +1,13 @@
-var fs = require('fs')
-var aws = require('aws-lib')
-var http = require('http')
-var https = require('https')
-var util = require('util')
+var fs = require('fs');
+var http = require('http');
+var https = require('https');
+var util = require('util');
 
 
-var config = eval('('+fs.readFileSync('config.json','utf8')+')')
-exports.config = config
+var config = eval('('+fs.readFileSync('config.json','utf8')+')');
+exports.config = config;
 
-var redis = require('redis').createClient(config.redis.port, config.redis.host)
-
-var awsProdAdv = aws.createProdAdvClient(
-  config.aws.accessKeyId,
-  config.aws.secretAccessKey, config.aws.associateTag, config.aws
-)
-
+var redis = require('redis').createClient(config.redis.port, config.redis.host);
 
 
 /**
@@ -28,26 +21,26 @@ var awsProdAdv = aws.createProdAdvClient(
  * timeout is retrieved from config.json file.
  */
 var CoceFetcher = function(timeout) {
-  if (timeout === undefined) timeout = config.timeout
-  this.timeout = timeout
-  this.ids
-  this.providers
-  this.count = 0
-  this.timeoutId
-  this.finish
-  this.finished = false
+  if (timeout === undefined) timeout = config.timeout;
+  this.timeout = timeout;
+  this.ids;
+  this.providers;
+  this.count = 0;
+  this.timeoutId;
+  this.finish;
+  this.finished = false;
 
   /**
    * URLs found in the cache (or from providers)
    * @property url
    * @type Object
    */
-  this.url = {}
+  this.url = {};
 }
-exports.CoceFetcher = CoceFetcher
+exports.CoceFetcher = CoceFetcher;
 
 
-CoceFetcher.RegGb = new RegExp("(zoom=5)", "g")
+CoceFetcher.RegGb = new RegExp("(zoom=5)", "g");
 
 
 
@@ -56,110 +49,42 @@ CoceFetcher.RegGb = new RegExp("(zoom=5)", "g")
  * @method aws_http
  * @param {Array} ids The resource IDs to request to Amazon
  */
-var aws_http = function(ids) {
-  const repo = this
-  let i = 0
-  let checkoneurl
+CoceFetcher.prototype.aws = function(ids) {
+  const repo = this;
+  let i = 0;
+  let checkoneurl;
   checkoneurl = () => {
-    const id = ids[i]
-    let search = id
+    const id = ids[i];
+    let search = id;
     // If ISBN13, transform it into ISBN10
-    search = search.replace(/-/g, '')
+    search = search.replace(/-/g, '');
     if (search.length == 13) {
-      search = search.substr(3,9)
+      search = search.substr(3,9);
       // Calculate checksum
       var checksum = search.split('').reduce(function(s, c, i) {
-        return s + parseInt(c) * (i+1)
-      }, 0)
-      checksum %= 11
-      checksum = checksum == 10 ? 'X' : checksum
-      search += checksum
+        return s + parseInt(c) * (i+1);
+      }, 0);
+      checksum %= 11;
+      checksum = checksum == 10 ? 'X' : checksum;
+      search += checksum;
     }
     const opts = {
       hostname: 'images-na.ssl-images-amazon.com',
       method: 'HEAD',
       headers: {'user-agent': 'Mozilla/5.0'},
       path: '/images/P/' + search + '.01.MZZZZZZZZZ.jpg',
-    }
+    };
     https.get(opts, (res) => {
-      const url = 'https://' + opts.hostname + opts.path
-      if (res.statusCode == 200 || res.statusCode == 403) repo.addurl('aws', id, url)
-      repo.increment()
-      i++
+      const url = 'https://' + opts.hostname + opts.path;
+      if (res.statusCode == 200 || res.statusCode == 403) repo.addurl('aws', id, url);
+      repo.increment();
+      i++;
       // timeout for next request
-      if (i < ids.length) setTimeout(checkoneurl, 30)
+      if (i < ids.length) setTimeout(checkoneurl, 30);
     })
   }
-  checkoneurl()
-}
-
-
-/**
- * Retrieve a IDs from Amazon Product Advertising API
- * @method aws_service
- * @param {Array} ids The resource IDs to request to Amazon
- */
-var aws_service = function(ids) {
-  var repo = this
-  // FIXME: A request per ID is sent to AWS. A better solution should send
-  // grouped queries. But difficult to achieve with AWS API.
-  for (var i=0; i < ids.length; i++) {
-    (function(){
-      var id = ids[i]
-      var options = {
-        host: config.aws.host,
-        region: config.aws.region,
-        SearchIndex: 'Blended',
-        ResponseGroup: 'Images'
-      }
-      options.Keywords = id
-      awsProdAdv.call('ItemSearch', options, function(err, result) {
-        if ( result.Error ) {
-          if ( result.Error.Code == 'RequestThrottled' ) {
-            //console.log('ID ' + id + ' not found on AWS because Throttling')
-            redis.del('aws.'+id)
-          } else {
-            //console.log(util.inspect(result.Error, false, null))
-          }
-        } else {
-          var items = result.Items
-          if (items) {
-            if (items.Request.Errors ) {
-              // No match = no item found in AWS
-              //console.log('------- AWS Error --------')
-              //console.log(items.Request.Errors)
-            } else {
-              var item = items.Item
-              items = item instanceof Array ? item : [ item ]
-              //console.log(util.inspect(item, false, null))
-              for (var i in items) {
-                item = items[i]
-                var url = item[config.aws.imageSize]
-                if (url !== undefined) { // Amazon has a cover image
-                  var url = url.URL
-                  url = url.replace('http://ecx.images-amazon.com','https://images-na.ssl-images-amazon.com')
-                  redis.setex('aws.'+id, config.aws.timeout, url)
-                  if (repo.url[id] === undefined) repo.url[id] = {}
-                  repo.url[id]['aws'] = url
-                  //console.log('AWS added: ' + key + '=' + url)
-                  //console.log(util.inspect(repo, false, null))
-                  break
-                }
-              }
-            }
-          }
-        }
-        repo.increment()
-      })
-    }())
-  }
-}
-
-
-CoceFetcher.prototype.aws =
-  config.aws && config.aws.method && config.aws.method == 'http'
-  ? aws_http
-  : aws_service
+  checkoneurl();
+};
 
 
 /**
@@ -168,30 +93,30 @@ CoceFetcher.prototype.aws =
  * @param {Array} ids The resource IDs to request to Google Books
  */
 CoceFetcher.prototype.gb = function(ids) {
-  const repo = this
+  const repo = this;
   const opts = {
     host: 'books.google.com',
     port: 443,
     path: "/books?bibkeys=" + ids.join(',') + "&jscmd=viewapi&amp;hl=en",
-  }
+  };
   https.get(opts, (res) => {
-    res.setEncoding('utf8')
-    let store = ''
-    res.on('data', (data) => store += data)
+    res.setEncoding('utf8');
+    let store = '';
+    res.on('data', (data) => store += data);
     res.on('end', () => {
-      eval(store)
+      eval(store);
       Object.values(_GBSBookInfo).forEach((item) => {
-        const id = item.bib_key
-        let url = item.thumbnail_url
-        if (url === undefined) return
+        const id = item.bib_key;
+        let url = item.thumbnail_url;
+        if (url === undefined) return;
         // get the medium size cover image
-        url = url.replace(CoceFetcher.RegGb, 'zoom=1')
-        repo.addurl('gb', id, url)
-      })
-      repo.increment(ids.length)
-    })
-  })
-}
+        url = url.replace(CoceFetcher.RegGb, 'zoom=1');
+        repo.addurl('gb', id, url);
+      });
+      repo.increment(ids.length);
+    });
+  });
+};
 
 
 /**
@@ -200,28 +125,28 @@ CoceFetcher.prototype.gb = function(ids) {
  * @param {Array} ids The resource IDs to request to Open Library
  */
 CoceFetcher.prototype.ol = function(ids) {
-  const repo = this
+  const repo = this;
   const opts = {
     host: 'openlibrary.org',
     port: 80,
     path: "/api/books?bibkeys=" + ids.join(',') + "&jscmd=data",
-  }
+  };
   http.get(opts, (res) => {
-    res.setEncoding('utf8')
-    let store = ''
-    res.on('data', (data) => store += data )
+    res.setEncoding('utf8');
+    let store = '';
+    res.on('data', (data) => store += data );
     res.on('end', () => {
-      eval(store)
+      eval(store);
       for (var id in _OLBookInfo) {
-        var url = _OLBookInfo[id].cover
-        if (url === undefined) continue
-        url = url[config.ol.imageSize]
-        repo.addurl('ol', id, url)
+        var url = _OLBookInfo[id].cover;
+        if (url === undefined) continue;
+        url = url[config.ol.imageSize];
+        repo.addurl('ol', id, url);
       }
-      repo.increment(ids.length)
-    })
-  })
-}
+      repo.increment(ids.length);
+    });
+  });
+};
 
 
 /**
@@ -229,10 +154,10 @@ CoceFetcher.prototype.ol = function(ids) {
  * @param {int} increment Increment the number of found IDs. No parameter = 1.
  */
 CoceFetcher.prototype.addurl = function(provider, id, url) {
-  redis.setex(`${provider}.${id}`, config[provider].timeout, url)
-  if (this.url[id] === undefined) this.url[id] = {}
-  this.url[id][provider] = url 
-}
+  redis.setex(`${provider}.${id}`, config[provider].timeout, url);
+  if (this.url[id] === undefined) this.url[id] = {};
+  this.url[id][provider] = url;
+};
 
 
 
@@ -242,16 +167,16 @@ CoceFetcher.prototype.addurl = function(provider, id, url) {
  * @param {int} increment Increment the number of found IDs. No parameter = 1.
  */
 CoceFetcher.prototype.increment = function(increment) {
-  if (increment === undefined) increment = 1
-  this.count += increment
+  if (increment === undefined) increment = 1;
+  this.count += increment;
   if (this.count >= this.countMax) {
-    clearTimeout(this.timeoutId)
+    clearTimeout(this.timeoutId);
     if (!this.finished) {
-      this.finished = true
-      this.finish(this.url)
+      this.finished = true;
+      this.finish(this.url);
     }
   }
-}
+};
 
 
 /**
@@ -261,42 +186,42 @@ CoceFetcher.prototype.increment = function(increment) {
  * @param {String} provider (aws|gb|ol) to search for
  */
 CoceFetcher.prototype.add = function(ids, provider) {
-  var repo = this
-  var notcached = []
-  var count = ids.length
-  var timeoutId
+  var repo = this;
+  var notcached = [];
+  var count = ids.length;
+  var timeoutId;
   for (var i=0; i < ids.length; i++) {
     (function(){
-      var id = ids[i]
-      var key = provider + '.' + ids[i]
+      var id = ids[i];
+      var key = provider + '.' + ids[i];
       redis.get(key, function(err, reply) {
-        count--
+        count--;
         if ( reply === null ) {
           // Not in the cache
-          notcached.push(id)
-          redis.setex(provider+'.'+id, config[provider].timeout, '')
+          notcached.push(id);
+          redis.setex(provider+'.'+id, config[provider].timeout, '');
         } else if ( reply === '' ) {
           // In the cache, but no url via provider
-          repo.increment()
+          repo.increment();
         } else {
-          if (repo.url[id] === undefined) repo.url[id] = {}
-          repo.url[id][provider] = reply
-          repo.increment()
+          if (repo.url[id] === undefined) repo.url[id] = {};
+          repo.url[id][provider] = reply;
+          repo.increment();
         }
         if (count == 0 && timeoutId !== undefined) {
           // We get all responses from Redis
-          clearTimeout(timeoutId)
+          clearTimeout(timeoutId);
           //console.log("Redis: all responses received. notcached="+notcached.length)
-          if (notcached.length > 0) repo[provider](notcached)
+          if (notcached.length > 0) repo[provider](notcached);
         }
       })
     }())
    }
    // Wait all Redis responses
    timeoutId = setTimeout(function(){
-     if (notcached.length > 0) repo[provider](notcached)
-   }, config.redis.timeout)
-}
+     if (notcached.length > 0) repo[provider](notcached);
+   }, config.redis.timeout);
+};
 
 
 /**
@@ -310,27 +235,27 @@ CoceFetcher.prototype.add = function(ids, provider) {
  * elasped
  */
 CoceFetcher.prototype.fetch = function(ids, providers, finish) {
-  this.count = 0
-  this.countMax = ids.length * providers.length
-  this.timeoutId
-  this.finish = finish
-  this.finished = false
-  this.url = {}
+  this.count = 0;
+  this.countMax = ids.length * providers.length;
+  this.timeoutId;
+  this.finish = finish;
+  this.finished = false;
+  this.url = {};
 
   // Validate providers
   for (var i=0; provider = providers[i]; i++)
     if (config.providers.indexOf(provider) == -1)
-      throw new Error('Unavailable provider: ' + provider)
+      throw new Error('Unavailable provider: ' + provider);
 
   for (var i=0; provider = providers[i]; i++)
-    this.add(ids, provider)
+    this.add(ids, provider);
   if (this.count !== this.countMax) {
-    var repo = this
+    var repo = this;
     this.timeoutId = setTimeout(function() {
       if (!repo.finished) {
-        repo.finished = true
-        repo.finish(repo.url)
+        repo.finished = true;
+        repo.finish(repo.url);
       }
-    }, this.timeout)
+    }, this.timeout);
   }
-}
+};
