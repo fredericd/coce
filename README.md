@@ -42,7 +42,7 @@ then Open Library): Coce send the first available URL.
   * `ol` - Open Library parameters:
      * `timeout` - timeout of the cached URL from Open Library. After this delay, an URL is automatically removed from the cache, and so has to be re-fetched again if requested
      * `imageSize` - size of images: small, medium, large
-  * `aws` - Amazon AWS parameters. In order to use AWS, you need to sign up as [Amazon Associate](https://webservices.amazon.com/paapi5/documentation/troubleshooting/sign-up-as-an-associate.html). Create a user and give him credential to [Amazon Product Advertising API](https://webservices.amazon.com/paapi5/documentation/). Alternatively, you can get Amazon cover images using a direct http method, not requiring a credential.
+  * `aws` - Amazon AWS parameters. In order to use AWS, you need to sign up as [Amazon Associate](https://webservices.amazon.com/paapi5/documentation/troubleshooting/sign-up-as-an-associate.html). Create a user and give him credential to [Amazon Product Advertising API](https://webservices.amazon.com/paapi5/documentation/). Alternatively, you can get Amazon cover images using a direct http method, not requiring a credential. The Amazon Product Advertising usage into Coce is fading into obsolescence because Amazon reinforce its rules and expel associate that doesn't generate revenues...
      * `method` - service|http. If using http, `timeout` parameter is required, and none of any others. For beginning, `http` is simpler to set up.
      * `host` - The API is available for several locales. If omitted, USA by default. For France: webservices.amazon.fr. See the [List of locales](http://docs.aws.amazon.com/AWSECommerceService/latest/DG/Locales.html).
      * `accessKeyId`
@@ -88,8 +88,25 @@ Daemonize:
 passenger start --port 8080 --daemonize
 ```
 
-Since passenger manages the service restart automatically, the service startup can just be
-put in `/etc/rc.local` on various Linux distributions.
+Since passenger manages the service restart automatically, the service startup
+can just be put in `/etc/rc.local` on various Linux distributions.
+
+## Redis persistence
+
+Coce book cover images are stored in Redis. By default, there is no [data
+persistence](https://redis.io/topics/persistence). It means that if you restart
+your server, all the urls patienly collected will be lost.
+
+By default, on a Debian/Ubuntu box, Redis saves its state in a file:
+`/var/lib/redis/dump.rdb`. You can backup this file, automatically with a cron
+job. To restore a backup, you just have to stop the Redis server, copy the file,
+and restart Redis. Something like that:
+
+```bash
+systemctl stop redis-server
+cp path_name_to_backup/dump.rdb /var/lib/redis
+systemctl start redis-server
+```
 
 ## Service usage
 

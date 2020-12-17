@@ -57,12 +57,12 @@ CoceFetcher.RegGb = new RegExp("(zoom=5)", "g")
  * @param {Array} ids The resource IDs to request to Amazon
  */
 var aws_http = function(ids) {
-  var repo = this
-  var i = 0
-  var checkoneurl
-  checkoneurl = function() {
-    var id = ids[i]
-    var search = id
+  const repo = this
+  let i = 0
+  let checkoneurl
+  checkoneurl = () => {
+    const id = ids[i]
+    let search = id
     // If ISBN13, transform it into ISBN10
     search = search.replace(/-/g, '')
     if (search.length == 13) {
@@ -75,25 +75,19 @@ var aws_http = function(ids) {
       checksum = checksum == 10 ? 'X' : checksum
       search += checksum
     }
-    var opts = {
+    const opts = {
       hostname: 'images-na.ssl-images-amazon.com',
       method: 'HEAD',
       headers: {'user-agent': 'Mozilla/5.0'},
       path: '/images/P/' + search + '.01.MZZZZZZZZZ.jpg',
     }
-    var req = https.get(opts, function(res) {
-      var url = 'https://' + opts.hostname + opts.path
-      if (res.statusCode == 200 || res.statusCode == 403) {
-        if (repo.url[id] === undefined) repo.url[id] = {}
-        redis.setex('aws.'+id, config.aws.timeout, url)
-        repo.url[id]['aws'] = url
-      }
+    https.get(opts, (res) => {
+      const url = 'https://' + opts.hostname + opts.path
+      if (res.statusCode == 200 || res.statusCode == 403) repo.addurl('aws', id, url)
       repo.increment()
       i++
-      if ( i < ids.length ) {
-        //console.log('On place un timeout 100 pour next request')
-        setTimeout(checkoneurl, 30)
-      }
+      // timeout for next request
+      if (i < ids.length) setTimeout(checkoneurl, 30)
     })
   }
   checkoneurl()
@@ -174,31 +168,26 @@ CoceFetcher.prototype.aws =
  * @param {Array} ids The resource IDs to request to Google Books
  */
 CoceFetcher.prototype.gb = function(ids) {
-  var repo = this
-  var opts = {
+  const repo = this
+  const opts = {
     host: 'books.google.com',
     port: 443,
     path: "/books?bibkeys=" + ids.join(',') + "&jscmd=viewapi&amp;hl=en",
   }
-  var req = https.get(opts, function(res) {
+  https.get(opts, (res) => {
     res.setEncoding('utf8')
-    var store = ''
-    res.on('data', function(data) { store += data })
-    res.on('end', function() {
-      //console.log(store)
+    let store = ''
+    res.on('data', (data) => store += data)
+    res.on('end', () => {
       eval(store)
-      //console.log(_GBSBookInfo)
-      for (var id in _GBSBookInfo) {
-        var url = _GBSBookInfo[id].thumbnail_url
-        if ( url === undefined ) { continue; }
+      Object.values(_GBSBookInfo).forEach((item) => {
+        const id = item.bib_key
+        let url = item.thumbnail_url
+        if (url === undefined) return
         // get the medium size cover image
         url = url.replace(CoceFetcher.RegGb, 'zoom=1')
-        redis.setex('gb.'+id, config.gb.timeout, url)
-        if (repo.url[id] === undefined) repo.url[id] = {}
-        repo.url[id]['gb'] = url
-        //console.log('gb.'+id +': ' + url)
-        //console.log(util.inspect(repo, false, null))
-      }
+        repo.addurl('gb', id, url)
+      })
       repo.increment(ids.length)
     })
   })
@@ -211,30 +200,38 @@ CoceFetcher.prototype.gb = function(ids) {
  * @param {Array} ids The resource IDs to request to Open Library
  */
 CoceFetcher.prototype.ol = function(ids) {
-  var repo = this
-  var opts = {
+  const repo = this
+  const opts = {
     host: 'openlibrary.org',
     port: 80,
     path: "/api/books?bibkeys=" + ids.join(',') + "&jscmd=data",
   }
-  var req = http.get(opts, function(res) {
+  http.get(opts, (res) => {
     res.setEncoding('utf8')
-    var store = ''
-    res.on('data', function(data) { store += data })
-    res.on('end', function() {
+    let store = ''
+    res.on('data', (data) => store += data )
+    res.on('end', () => {
       eval(store)
-      //console.log(util.inspect(_OLBookInfo, false, null))
       for (var id in _OLBookInfo) {
         var url = _OLBookInfo[id].cover
         if (url === undefined) continue
         url = url[config.ol.imageSize]
-        redis.setex('ol.'+id, config.ol.timeout, url)
-        if (repo.url[id] === undefined) repo.url[id] = {}
-        repo.url[id]['ol'] = url
+        repo.addurl('ol', id, url)
       }
       repo.increment(ids.length)
     })
   })
+}
+
+
+/**
+ * Add an url to redis
+ * @param {int} increment Increment the number of found IDs. No parameter = 1.
+ */
+CoceFetcher.prototype.addurl = function(provider, id, url) {
+  redis.setex(`${provider}.${id}`, config[provider].timeout, url)
+  if (this.url[id] === undefined) this.url[id] = {}
+  this.url[id][provider] = url 
 }
 
 
