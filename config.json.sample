@@ -11,16 +11,8 @@
     "timeout": 86400
   },
   "aws": {
-    "method": "http",
-    "host": "webservices.amazon.fr",
     "timeout": 86400,
-    "accessKeyId": "xxxxxxxxxxxxxxxxxxxx",
-    "secretAccessKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    "associateTag": "xxxxxxxx",
     "imageSize": "MediumSize"
-  },
-  "amazon": {
-    "timeout": 86400
   },
   "ol": {
     "timeout": 86400,
