@@ -1,13 +1,13 @@
-var fs = require('fs');
-var http = require('http');
-var https = require('https');
-var util = require('util');
+const fs = require('fs');
+const http = require('http');
+const https = require('https');
+const util = require('util');
 
 
-var config = eval('('+fs.readFileSync('config.json','utf8')+')');
+const config = eval('('+fs.readFileSync('config.json','utf8')+')');
 exports.config = config;
 
-var redis = require('redis').createClient(config.redis.port, config.redis.host);
+const redis = require('redis').createClient(config.redis.port, config.redis.host);
 
 
 /**
@@ -20,7 +20,7 @@ var redis = require('redis').createClient(config.redis.port, config.redis.host);
  * is aborted, even if some providers haven't yet responded. Without param, the
  * timeout is retrieved from config.json file.
  */
-var CoceFetcher = function(timeout) {
+const CoceFetcher = function(timeout) {
   if (timeout === undefined) timeout = config.timeout;
   this.timeout = timeout;
   this.ids;
@@ -186,14 +186,14 @@ CoceFetcher.prototype.increment = function(increment) {
  * @param {String} provider (aws|gb|ol) to search for
  */
 CoceFetcher.prototype.add = function(ids, provider) {
-  var repo = this;
-  var notcached = [];
-  var count = ids.length;
-  var timeoutId;
-  for (var i=0; i < ids.length; i++) {
+  const repo = this;
+  const notcached = [];
+  let count = ids.length;
+  let timeoutId;
+  for (let i=0; i < ids.length; i++) {
     (function(){
-      var id = ids[i];
-      var key = provider + '.' + ids[i];
+      const id = ids[i];
+      const key = provider + '.' + ids[i];
       redis.get(key, function(err, reply) {
         count--;
         if ( reply === null ) {
@@ -243,14 +243,14 @@ CoceFetcher.prototype.fetch = function(ids, providers, finish) {
   this.url = {};
 
   // Validate providers
-  for (var i=0; provider = providers[i]; i++)
+  for (let i=0; provider = providers[i]; i++)
     if (config.providers.indexOf(provider) == -1)
       throw new Error('Unavailable provider: ' + provider);
 
-  for (var i=0; provider = providers[i]; i++)
+  for (let i=0; provider = providers[i]; i++)
     this.add(ids, provider);
   if (this.count !== this.countMax) {
-    var repo = this;
+    const repo = this;
     this.timeoutId = setTimeout(function() {
       if (!repo.finished) {
         repo.finished = true;
@@ -258,4 +258,8 @@ CoceFetcher.prototype.fetch = function(ids, providers, finish) {
       }
     }, this.timeout);
   }
+};
+
+exports.set = function(provider, id, url) {
+  redis.setex(`aws.${id}`, 315360000, url);
 };

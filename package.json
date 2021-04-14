@@ -1,6 +1,6 @@
 {
   "name": "coce",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Resource cover image URLs cache server",
   "author": "Frédéric Demians <f.demians@tamil.fr>",
   "engines": {
@@ -15,7 +15,7 @@
     "url": "https://github.com/fredericd/coce"
   },
   "bugs": {
-    "url": "https://github.com/fredericd/marcjs/issues"
+    "url": "https://github.com/fredericd/coce/issues"
   },
   "license": "MIT",
   "scripts": {
