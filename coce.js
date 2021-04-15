@@ -1,14 +1,13 @@
+/* eslint-disable no-undef */
+/* eslint-disable no-eval */
 const fs = require('fs');
 const http = require('http');
 const https = require('https');
-const util = require('util');
 
-
-const config = eval('('+fs.readFileSync('config.json','utf8')+')');
+const config = eval(`(${fs.readFileSync('config.json', 'utf8')})`);
 exports.config = config;
 
 const redis = require('redis').createClient(config.redis.port, config.redis.host);
-
 
 /**
  * CoceFetcher class
@@ -20,14 +19,9 @@ const redis = require('redis').createClient(config.redis.port, config.redis.host
  * is aborted, even if some providers haven't yet responded. Without param, the
  * timeout is retrieved from config.json file.
  */
-const CoceFetcher = function(timeout) {
-  if (timeout === undefined) timeout = config.timeout;
-  this.timeout = timeout;
-  this.ids;
-  this.providers;
+const CoceFetcher = function CoceFetcher(timeout) {
+  this.timeout = timeout === undefined ? config.timeout : timeout;
   this.count = 0;
-  this.timeoutId;
-  this.finish;
   this.finished = false;
 
   /**
@@ -36,75 +30,69 @@ const CoceFetcher = function(timeout) {
    * @type Object
    */
   this.url = {};
-}
+};
 exports.CoceFetcher = CoceFetcher;
 
-
-CoceFetcher.RegGb = new RegExp("(zoom=5)", "g");
-
-
+CoceFetcher.RegGb = new RegExp('(zoom=5)', 'g');
 
 /**
  * Retrieve an ID from Amazon. Cover image direct URL are tested.
  * @method aws_http
  * @param {Array} ids The resource IDs to request to Amazon
  */
-CoceFetcher.prototype.aws = function(ids) {
+CoceFetcher.prototype.aws = function awsFetcher(ids) {
   const repo = this;
   let i = 0;
-  let checkoneurl;
-  checkoneurl = () => {
+  const checkoneurl = () => {
     const id = ids[i];
     let search = id;
     // If ISBN13, transform it into ISBN10
     search = search.replace(/-/g, '');
-    if (search.length == 13) {
-      search = search.substr(3,9);
+    if (search.length === 13) {
+      search = search.substr(3, 9);
       // Calculate checksum
-      var checksum = search.split('').reduce(function(s, c, i) {
-        return s + parseInt(c) * (i+1);
-      }, 0);
+      let checksum = search.split('').reduce((s, c, ii) => s + parseInt(c, 10) * (ii + 1), 0);
       checksum %= 11;
-      checksum = checksum == 10 ? 'X' : checksum;
+      checksum = checksum === 10 ? 'X' : checksum;
       search += checksum;
     }
     const opts = {
       hostname: 'images-na.ssl-images-amazon.com',
       method: 'HEAD',
-      headers: {'user-agent': 'Mozilla/5.0'},
-      path: '/images/P/' + search + '.01.MZZZZZZZZZ.jpg',
+      headers: { 'user-agent': 'Mozilla/5.0' },
+      path: `/images/P/${search}.01.MZZZZZZZZZ.jpg`,
     };
     https.get(opts, (res) => {
-      const url = 'https://' + opts.hostname + opts.path;
-      if (res.statusCode == 200 || res.statusCode == 403) repo.addurl('aws', id, url);
+      const url = `https://${opts.hostname}${opts.path}`;
+      if (res.statusCode === 200 || res.statusCode === 403) repo.addurl('aws', id, url);
       repo.increment();
-      i++;
+      i += 1;
       // timeout for next request
       if (i < ids.length) setTimeout(checkoneurl, 30);
-    })
-  }
+    });
+  };
   checkoneurl();
 };
-
 
 /**
  * Retrieve an ID from Google Books
  * @method gb
  * @param {Array} ids The resource IDs to request to Google Books
  */
-CoceFetcher.prototype.gb = function(ids) {
+CoceFetcher.prototype.gb = function gb(ids) {
   const repo = this;
   const opts = {
     host: 'books.google.com',
     port: 443,
-    path: "/books?bibkeys=" + ids.join(',') + "&jscmd=viewapi&amp;hl=en",
+    path: `/books?bibkeys=${ids.join(',')}&jscmd=viewapi&amp;hl=en`,
   };
   https.get(opts, (res) => {
     res.setEncoding('utf8');
     let store = '';
-    res.on('data', (data) => store += data);
+    res.on('data', (data) => { store += data; });
     res.on('end', () => {
       eval(store);
+      // eslint-disable-next-line no-undef
       Object.values(_GBSBookInfo).forEach((item) => {
         const id = item.bib_key;
         let url = item.thumbnail_url;
@@ -118,56 +106,51 @@ CoceFetcher.prototype.gb = function(ids) {
   });
 };
 
-
 /**
  * Retrieve an ID from Open Library
  * @method ol
  * @param {Array} ids The resource IDs to request to Open Library
  */
-CoceFetcher.prototype.ol = function(ids) {
+CoceFetcher.prototype.ol = function ol(ids) {
   const repo = this;
   const opts = {
     host: 'openlibrary.org',
     port: 80,
-    path: "/api/books?bibkeys=" + ids.join(',') + "&jscmd=data",
+    path: `/api/books?bibkeys=${ids.join(',')}&jscmd=data`,
   };
   http.get(opts, (res) => {
     res.setEncoding('utf8');
     let store = '';
-    res.on('data', (data) => store += data );
+    res.on('data', (data) => { store += data; });
     res.on('end', () => {
       eval(store);
-      for (var id in _OLBookInfo) {
-        var url = _OLBookInfo[id].cover;
-        if (url === undefined) continue;
+      Object.keys(_OLBookInfo).forEach((id) => {
+        let url = _OLBookInfo[id].cover;
+        if (url === undefined) return;
         url = url[config.ol.imageSize];
         repo.addurl('ol', id, url);
-      }
+      });
       repo.increment(ids.length);
     });
   });
 };
 
-
 /**
  * Add an url to redis
  * @param {int} increment Increment the number of found IDs. No parameter = 1.
  */
-CoceFetcher.prototype.addurl = function(provider, id, url) {
+CoceFetcher.prototype.addurl = function addurl(provider, id, url) {
   redis.setex(`${provider}.${id}`, config[provider].timeout, url);
   if (this.url[id] === undefined) this.url[id] = {};
   this.url[id][provider] = url;
 };
-
-
 
 /**
  * Increment the count of found URLs.
  * Stop the timer if all URLs have been found.
  * @param {int} increment Increment the number of found IDs. No parameter = 1.
  */
-CoceFetcher.prototype.increment = function(increment) {
-  if (increment === undefined) increment = 1;
+CoceFetcher.prototype.increment = function incr(increment = 1) {
   this.count += increment;
   if (this.count >= this.countMax) {
     clearTimeout(this.timeoutId);
@@ -178,29 +161,29 @@ CoceFetcher.prototype.increment = function(increment) {
   }
 };
 
-
 /**
  * Retrieve IDs from a provider
  * @method add
  * @param {Array} ids Group of IDs
  * @param {String} provider (aws|gb|ol) to search for
  */
-CoceFetcher.prototype.add = function(ids, provider) {
+CoceFetcher.prototype.add = function add(ids, provider) {
   const repo = this;
   const notcached = [];
   let count = ids.length;
   let timeoutId;
-  for (let i=0; i < ids.length; i++) {
-    (function(){
+  for (let i = 0; i < ids.length; i += 1) {
+    // eslint-disable-next-line no-loop-func
+    (function addId() {
       const id = ids[i];
-      const key = provider + '.' + ids[i];
-      redis.get(key, function(err, reply) {
-        count--;
-        if ( reply === null ) {
+      const key = `${provider}.${ids[i]}`;
+      redis.get(key, (err, reply) => {
+        count -= 1;
+        if (reply === null) {
           // Not in the cache
           notcached.push(id);
-          redis.setex(provider+'.'+id, config[provider].timeout, '');
-        } else if ( reply === '' ) {
+          redis.setex(`${provider}.${id}`, config[provider].timeout, '');
+        } else if (reply === '') {
           // In the cache, but no url via provider
           repo.increment();
         } else {
@@ -208,25 +191,23 @@ CoceFetcher.prototype.add = function(ids, provider) {
           repo.url[id][provider] = reply;
           repo.increment();
         }
-        if (count == 0 && timeoutId !== undefined) {
+        if (count === 0 && timeoutId !== undefined) {
           // We get all responses from Redis
           clearTimeout(timeoutId);
-          //console.log("Redis: all responses received. notcached="+notcached.length)
           if (notcached.length > 0) repo[provider](notcached);
         }
-      })
-    }())
-   }
-   // Wait all Redis responses
-   timeoutId = setTimeout(function(){
-     if (notcached.length > 0) repo[provider](notcached);
-   }, config.redis.timeout);
+      });
+    }());
+  }
+  // Wait all Redis responses
+  timeoutId = setTimeout(() => {
+    if (notcached.length > 0) repo[provider](notcached);
+  }, config.redis.timeout);
 };
-
 
 /**
  * Fetch all provided ID from cover image providers
- * Wait for providers reponses, with a limitation of time
+ * Wait for providers reponses, with a limitation of time
  * @method fetch
  * @param {Array} ids Array of images ID
  * @param {Array} providers Array of images providers (gb, aws, ol)
@@ -234,24 +215,30 @@ CoceFetcher.prototype.add = function(ids, provider) {
  * @param finish {Function} Function to execute when all URLs are fetched or time has
  * elasped
  */
-CoceFetcher.prototype.fetch = function(ids, providers, finish) {
+CoceFetcher.prototype.fetch = function fetch(ids, providers, finish) {
   this.count = 0;
   this.countMax = ids.length * providers.length;
-  this.timeoutId;
   this.finish = finish;
   this.finished = false;
   this.url = {};
 
   // Validate providers
-  for (let i=0; provider = providers[i]; i++)
-    if (config.providers.indexOf(provider) == -1)
-      throw new Error('Unavailable provider: ' + provider);
+  if (providers === undefined) {
+    finish({ error: 'At least, one provider is required' });
+    return;
+  }
+  for (let i = 0; i < providers.length; i += 1) {
+    provider = providers[i];
+    if (config.providers.indexOf(provider) === -1) {
+      finish({ error: `Unavailable provider: ${provider}` });
+      return;
+    }
+  }
 
-  for (let i=0; provider = providers[i]; i++)
-    this.add(ids, provider);
+  for (let i = 0; i < providers.length; i += 1) this.add(ids, providers[i]);
   if (this.count !== this.countMax) {
     const repo = this;
-    this.timeoutId = setTimeout(function() {
+    this.timeoutId = setTimeout(() => {
       if (!repo.finished) {
         repo.finished = true;
         repo.finish(repo.url);
@@ -260,6 +247,6 @@ CoceFetcher.prototype.fetch = function(ids, providers, finish) {
   }
 };
 
-exports.set = function(provider, id, url) {
+exports.set = function setex(provider, id, url) {
   redis.setex(`aws.${id}`, 315360000, url);
 };
