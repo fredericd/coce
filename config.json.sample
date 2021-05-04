@@ -1,6 +1,6 @@
 {
   "port": "8080",
-  "providers": ["gb","aws","ol"],
+  "providers": ["gb","aws","ol","orb"],
   "timeout": 8000,
   "redis": {
     "host": "127.0.0.1",
@@ -17,5 +17,10 @@
   "ol": {
     "timeout": 86400,
     "imageSize": "medium"
+  },
+  "orb": {
+    "timeout": 86400,
+    "user": "authorized user",
+    "key": "api key"
   }
 }

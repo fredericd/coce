@@ -106,6 +106,38 @@ CoceFetcher.prototype.gb = function gb(ids) {
   });
 };
 
+
+/**
+ * Retrieve an ID from ORB
+ * @method orb
+ * @param {Array} ids The resource IDs to request to ORB
+ */
+ CoceFetcher.prototype.orb = function orb(ids) {
+  const repo = this;
+  const opts = {
+    host: 'api.base-orb.fr',
+    auth: `${config.orb.user}:${config.orb.key}`,
+    port: 443,
+    path: `/v1/products?eans=${ids.join(',')}&sort=ean_asc`,
+  };
+  https.get(opts, (res) => {
+    res.setEncoding('utf8');
+    let store = '';
+    res.on('data', (data) => { store += data; });
+    res.on('end', () => {
+      const orbres = JSON.parse(store);
+      Object.values(orbres.data).forEach((item) => {
+        const id = item.ean13;
+        const url = item.images.front.original.src;
+        if (url === undefined) return;
+        repo.addurl('orb', id, url);
+      });
+      repo.increment(ids.length);
+    });
+  });
+};
+
+
 /**
  * Retrieve an ID from Open Library
  * @method ol
