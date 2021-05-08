@@ -7,6 +7,10 @@
     "port": 6379,
     "timeout": 5000
   },
+  "cache": {
+    "path": "/home/myuser/covers",
+    "url": "https://coce.myserver.fr/covers"
+  },
   "gb": {
     "timeout": 86400
   },
@@ -21,6 +25,7 @@
   "orb": {
     "timeout": 86400,
     "user": "authorized user",
-    "key": "api key"
+    "key": "api key",
+    "cache": true
   }
 }

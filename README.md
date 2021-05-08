@@ -13,12 +13,14 @@ services to retrieve information on Books from an ID (ISBN for example).
 * [Amazon Product Advertising
   API](https://affiliate-program.amazon.com/gp/advertising/api/detail/main.html)
 * [Open Library Read API](http://openlibrary.org/dev/docs/api/read)
+* [ORB](https://www.base-orb.fr)
 
 With Coce, the cover images URL from various providers are cached in a Redis
 server. Client send REST request to Coce which reply with cached URL, or if not
 available in its cache retrieving them from providers. In its request, the
 client specify a providers order (for example `aws,gb,ol` for AWS, Google, and
-then Open Library): Coce send the first available URL.
+then Open Library): Coce send the first available URL. It's also possible to not
+only cache images URL but images themselves.
 
 
 ## Installation
@@ -42,6 +44,9 @@ then Open Library): Coce send the first available URL.
      * `host`
      * `port`
      * `timeout`
+  * `cache` - Local cache for images
+    * `path` - path to the directory where images are cached locally
+    * `url` - base url to the `path` directory
   * `gb` - Google Books parameters:
      * `timeout` - timeout of the cached URL from Google Books
   * `ol` - Open Library parameters:
@@ -51,6 +56,11 @@ then Open Library): Coce send the first available URL.
      * `imageSize` - size of images: small, medium, large
   * `aws` - Amazon
      * `imageSize` - size of images: SmallImage, MediumImage, LargeImage
+     * `timeout` - timeout when probing images url via direct http requests
+  * `orb` - ORB
+     * `user` - user to access ORB API
+     * `key` - API key
+     * `cache` - true/false, are images locally cached (and served)
      * `timeout` - timeout when probing images url via direct http requests
 
 ## Start

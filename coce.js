@@ -128,7 +128,7 @@ CoceFetcher.prototype.gb = function gb(ids) {
       const orbres = JSON.parse(store);
       Object.values(orbres.data).forEach((item) => {
         const id = item.ean13;
-        const url = item.images.front.original.src;
+        const url = item.images.front.thumbnail.src;
         if (url === undefined) return;
         repo.addurl('orb', id, url);
       });
@@ -169,12 +169,24 @@ CoceFetcher.prototype.ol = function ol(ids) {
 
 /**
  * Add an url to redis
- * @param {int} increment Increment the number of found IDs. No parameter = 1.
+ * Cache locally a file if necessary
  */
 CoceFetcher.prototype.addurl = function addurl(provider, id, url) {
-  redis.setex(`${provider}.${id}`, config[provider].timeout, url);
+  let storedUrl;
+  if (config[provider].cache) {
+    storedUrl = `${config.cache.url}/${provider}/${id}.jpg`;
+    const dest = `${config.cache.path}/${provider}/${id}.jpg`;
+    const file = fs.createWriteStream(dest);
+    https.get(url, (response) => {
+      response.pipe(file);
+      file.on('finish', () => file.close());
+    }).on('error', () => fs.unlink(dest));
+  } else {
+    storedUrl = url;
+  }
+  redis.setex(`${provider}.${id}`, config[provider].timeout, storedUrl);
   if (this.url[id] === undefined) this.url[id] = {};
-  this.url[id][provider] = url;
+  this.url[id][provider] = storedUrl;
 };
 
 /**
