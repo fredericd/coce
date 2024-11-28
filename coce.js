@@ -272,7 +272,7 @@ CoceFetcher.prototype.fetch = function fetch(ids, providers, finish) {
     return;
   }
   for (let i = 0; i < providers.length; i += 1) {
-    provider = providers[i];
+    let provider = providers[i];
     if (config.providers.indexOf(provider) === -1) {
       finish({ error: `Unavailable provider: ${provider}` });
       return;
