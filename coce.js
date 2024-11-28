@@ -176,11 +176,10 @@ CoceFetcher.prototype.addurl = function addurl(provider, id, url) {
   if (config[provider].cache) {
     storedUrl = `${config.cache.url}/${provider}/${id}.jpg`;
     const dest = `${config.cache.path}/${provider}/${id}.jpg`;
-    const file = fs.createWriteStream(dest);
-    https.get(url, (response) => {
-      response.pipe(file);
-      file.on('finish', () => file.close());
-    }).on('error', () => fs.unlink(dest));
+    saveresult = this.saveurl(url, dest);
+    if (saveresult != 200) {
+      storedUrl = url;
+    }
   } else {
     storedUrl = url;
   }
@@ -188,6 +187,40 @@ CoceFetcher.prototype.addurl = function addurl(provider, id, url) {
   if (this.url[id] === undefined) this.url[id] = {};
   this.url[id][provider] = storedUrl;
 };
+
+/**
+ * 
+ * Get a copy of the file, following redirects as necessary.
+ * Returns HTTP code 200 if successful.
+ */
+CoceFetcher.prototype.saveurl = function saveurl(url, dest) {
+  var redirs = [url],
+    fetch = function (url, dest) {
+      https.get(url, (response) => {
+        var body = [];
+        if ([503].indexOf(response.statusCode) >= 0) {
+          return 503;
+        } else if ([301, 302].indexOf(response.statusCode) >= 0) {
+          if (redirs.length > 10) {
+            return 302; // Fail silently
+          } else {
+            if (redirs.indexOf(response.headers.location) < 0) {
+              redirs.push(response.headers.location);
+              return fetch(response.headers.location, dest);
+            } else {
+              return 500; // Redirect loop detected. Fail silently
+            }
+          }
+        } else {
+          const file = fs.createWriteStream(dest);
+          response.pipe(file);
+          file.on('finish', () => file.close());
+          return 200;
+        }
+      });
+    };
+  return fetch(url, dest);
+}
 
 /**
  * Increment the count of found URLs.
