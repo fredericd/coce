@@ -1,0 +1,63 @@
+services:
+  coce:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      # Coce Configuration
+      - COCE_PORT=8080
+      - COCE_PROVIDERS=gb,aws,ol
+      - COCE_TIMEOUT=8000
+      # Redis Configuration
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_TIMEOUT=5000
+      # Cache Configuration
+      - COCE_CACHE_PATH=/app/covers
+      - COCE_CACHE_URL=http://localhost:8080/covers
+      # Provider Timeouts
+      - COCE_GB_TIMEOUT=86400
+      - COCE_AWS_TIMEOUT=86400
+      - COCE_OL_TIMEOUT=86400
+      - COCE_ORB_TIMEOUT=86400
+      # Provider Settings
+      - COCE_AWS_IMAGE_SIZE=MediumImage
+      - COCE_OL_IMAGE_SIZE=medium
+      - COCE_ORB_CACHE=true
+      # Optional: Set these if you have ORB credentials
+      # - COCE_ORB_USER=your_orb_user
+      # - COCE_ORB_KEY=your_orb_key
+    volumes:
+      - coce_covers:/app/covers
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - coce-network
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - coce-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  redis_data:
+    driver: local
+  coce_covers:
+    driver: local
+
+networks:
+  coce-network:
+    driver: bridge
