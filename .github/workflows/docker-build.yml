@@ -1,0 +1,117 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Parse repository and tag information
+        id: vars
+        run: |
+          # Extract repository name
+          IFS='/' read -r -a parts <<< "$GITHUB_REPOSITORY"
+          REPO_NAME="${parts[1]}"
+          echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV
+          echo "repo_name=$REPO_NAME" >> $GITHUB_OUTPUT
+          
+          # Extract tag version if this is a tag push
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            TAG_VERSION="${GITHUB_REF##*/}"
+            echo "TAG_VERSION=$TAG_VERSION" >> $GITHUB_ENV
+            echo "tag_version=$TAG_VERSION" >> $GITHUB_OUTPUT
+            echo "is_tag=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_tag=false" >> $GITHUB_OUTPUT
+          fi
+          
+          # Set image name
+          IMAGE_NAME="${GITHUB_REPOSITORY,,}"  # Convert to lowercase
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+          echo "image_name=$IMAGE_NAME" >> $GITHUB_OUTPUT
+
+      - name: Debug information
+        run: |
+          echo "Repository: $GITHUB_REPOSITORY"
+          echo "Repo name: $REPO_NAME"
+          echo "Image name: $IMAGE_NAME"
+          echo "Is tag: ${{ steps.vars.outputs.is_tag }}"
+          echo "Tag version: ${{ steps.vars.outputs.tag_version }}"
+          echo "GitHub ref: $GITHUB_REF"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate Docker tags
+        id: tags
+        run: |
+          TAGS="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          
+          if [[ "${{ steps.vars.outputs.is_tag }}" == "true" ]]; then
+            TAG_VERSION="${{ steps.vars.outputs.tag_version }}"
+            TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$TAG_VERSION"
+            
+            # Add semantic version tags if it's a proper semver tag
+            if [[ $TAG_VERSION =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              # Remove 'v' prefix for semantic versions
+              CLEAN_VERSION="${TAG_VERSION:1}"
+              MAJOR_MINOR="${CLEAN_VERSION%.*}"
+              MAJOR="${MAJOR_MINOR%.*}"
+              
+              TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$CLEAN_VERSION"
+              TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$MAJOR_MINOR"
+              TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$MAJOR"
+            fi
+          fi
+          
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
+          echo "Generated tags: $TAGS"
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          labels: |
+            org.opencontainers.image.title=${{ steps.vars.outputs.repo_name }}
+            org.opencontainers.image.description=Cover image URLs cache server
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.version=${{ steps.vars.outputs.tag_version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Image summary
+        run: |
+          echo "## Docker Image Built Successfully! 🐳" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Repository:** ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:** ${{ steps.tags.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Usage:" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
