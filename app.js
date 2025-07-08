@@ -56,3 +56,6 @@ app.get('/set', (req, res) => {
   coce.set(provider, id, url);
   res.send({ success: true });
 });
+
+// Export app for testing
+module.exports = app;
