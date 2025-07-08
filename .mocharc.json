@@ -1,0 +1,11 @@
+{
+  "require": ["test/setup.js"],
+  "recursive": true,
+  "timeout": 10000,
+  "reporter": "spec",
+  "exit": true,
+  "bail": false,
+  "grep": "",
+  "slow": 2000,
+  "ui": "bdd"
+}

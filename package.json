@@ -22,13 +22,21 @@
     "start": "node app.js",
     "lint": "eslint *.js",
     "lint:fix": "eslint *.js --fix",
-    "test": "mocha test/*.js"
+    "test": "mocha test/**/*.test.js --timeout 10000",
+    "test:unit": "mocha test/unit/*.test.js --timeout 5000",
+    "test:integration": "mocha test/integration/*.test.js --timeout 10000",
+    "test:watch": "mocha test/**/*.test.js --watch",
+    "test:coverage": "nyc mocha test/**/*.test.js"
   },
   "devDependencies": {
     "eslint": "^8.57.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.29.0",
     "mocha": "^10.7.3",
-    "supertest": "^7.0.0"
+    "supertest": "^7.0.0",
+    "sinon": "^17.0.0",
+    "chai": "^4.3.10",
+    "nock": "^13.4.0",
+    "redis-mock": "^0.56.3"
   }
 }
