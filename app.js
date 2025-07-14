@@ -58,13 +58,62 @@ app.use((err, req, res, next) => {
 // Health check endpoint
 app.get('/health', (req, res) => {
   req.logger.debug('Health check requested');
-  res.json({
+  
+  const healthData = {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     version: process.env.npm_package_version || 'unknown',
     uptime: process.uptime(),
-    service: 'coce'
+    service: 'coce',
+    memory: {
+      rss: Math.round(process.memoryUsage().rss / 1024 / 1024), // MB
+      heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) // MB
+    },
+    config: {
+      providers: coce.config.providers,
+      timeout: coce.config.timeout,
+      port: coce.config.port
+    }
+  };
+
+  // Add PM2 instance information if running under PM2
+  if (process.env.pm_id) {
+    healthData.pm2 = {
+      instanceId: process.env.pm_id,
+      clusterId: process.env.NODE_APP_INSTANCE || 0
+    };
+  }
+
+  // Log health check for monitoring systems
+  logger.logHealthCheck('healthy', {
+    memory: healthData.memory,
+    uptime: healthData.uptime
   });
+
+  res.json(healthData);
+});
+
+// Metrics endpoint for monitoring systems
+app.get('/metrics', (req, res) => {
+  req.logger.debug('Metrics requested');
+  
+  const metrics = {
+    timestamp: Date.now(),
+    process: {
+      pid: process.pid,
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      cpu: process.cpuUsage()
+    },
+    service: {
+      name: 'coce',
+      version: process.env.npm_package_version || 'unknown',
+      environment: process.env.NODE_ENV || 'development'
+    }
+  };
+
+  logger.logMetrics(metrics);
+  res.json(metrics);
 });
 
 // Root endpoint
