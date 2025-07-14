@@ -225,7 +225,7 @@ describe('Performance and Edge Cases', function() {
       const isbn = '9780415480635';
       
       // Create a very large mock response
-      const largeResponse = '_GBSBookInfo = {';
+      let largeResponse = '_GBSBookInfo = {';
       for (let i = 0; i < 1000; i++) {
         largeResponse += `"isbn${i}": {"bib_key": "isbn${i}", "thumbnail_url": "http://example.com/${i}.jpg"},`;
       }

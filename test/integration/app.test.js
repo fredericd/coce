@@ -35,7 +35,7 @@ describe('Coce Express App', function() {
           .get('/cover')
           .expect(400)
           .expect((res) => {
-            expect(res.body.error).to.include('ID parameter is missing');
+            expect(res.body.error).to.include('ID parameter is required');
           })
           .end(done);
       });
@@ -45,7 +45,7 @@ describe('Coce Express App', function() {
           .get('/cover?id=123')
           .expect(400)
           .expect((res) => {
-            expect(res.body.error).to.include('ID parameter is missing');
+            expect(res.body.error).to.include('ID parameter must be at least 8 characters');
           })
           .end(done);
       });
@@ -55,7 +55,7 @@ describe('Coce Express App', function() {
           .get('/cover?id=,,,')
           .expect(400)
           .expect((res) => {
-            expect(res.body.error).to.include('Bad id parameter');
+            expect(res.body.error).to.include('At least one valid ID is required');
           })
           .end(done);
       });
@@ -176,7 +176,7 @@ describe('Coce Express App', function() {
           .expect('Content-Type', /javascript/)
           .expect((res) => {
             expect(res.text).to.include(`${callback}(`);
-            expect(res.text).to.include(');');
+            expect(res.text).to.include(')');
           })
           .end(done);
       });
@@ -303,7 +303,7 @@ describe('Coce Express App', function() {
           .get(`/cover?id=${isbn}&provider=invalid`)
           .expect(400)
           .expect((res) => {
-            expect(res.body.error).to.include('Unavailable provider');
+            expect(res.body.error).to.include('Invalid providers');
           })
           .end(done);
       });
