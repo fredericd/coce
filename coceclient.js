@@ -1,55 +1,64 @@
+/* eslint-env browser */
+/* global $ */
 /**
-
-Usage:
-
-var cc = new CoceClient('http://coceserver.com:8080', 'ol,gb,aws');
-cc.fetch(['isbn1','isbn2'], function(isbn, url) {
-  $('#isbn_'+isbn).html('<img src="'+url+'">');
-});
-
-**/
+ * CoceClient - Client-side library for Coce cover image service
+ *
+ * Usage:
+ *
+ * var cc = new CoceClient('http://coceserver.com:8080', 'ol,gb,aws');
+ * cc.fetch(['isbn1','isbn2'], function(isbn, url) {
+ *   $('#isbn_'+isbn).html('<img src="'+url+'">');
+ * });
+ *
+ */
 
 function CoceClient(url, provider) {
+  const founds = {}; // Private cache for already found ISBN
+  let notfounds = {}; // ISBN not found in Coce
 
-    var founds = {};    // Private cache for already found ISBN
-    var notfounds = {}; // ISBN not found in Coce
+  this.url = url;
+  this.provider = provider;
 
-    this.url = url;
-    this.provider = provider;
+  this.fetch = function fetchCovers(isbns, cbUpdateUI) {
+    // First, find ISBNs in client-side cache
+    const isbntosearch = [];
+    $.each(isbns, (i, isbn) => {
+      const cachedUrl = founds[isbn];
+      if (cachedUrl) {
+        cbUpdateUI(isbn, cachedUrl);
+      } else if (notfounds[isbn] === undefined) {
+        notfounds[isbn] = 1;
+        isbntosearch.push(isbn);
+      }
+    });
 
-    this.fetch = function(isbns, cbUpdateUI) {
-        // First, find ISBNs in client-side cache
-        var isbntosearch = [];
-        $.each(isbns, function(i, isbn){
-            var url = founds[isbn];
-            if (url) {
-                cbUpdateUI(isbn, url);
-            } else if (notfounds[isbn] == undefined) {
-                notfounds[isbn] = 1;
-                isbntosearch.push(isbn);
-            }
+    if (isbntosearch.length === 0) {
+      return;
+    }
+
+    const { url: serviceUrl } = this;
+    const { provider: serviceProvider } = this;
+    $.ajax({
+      url: `${serviceUrl}/cover?id=${isbntosearch.join(',')}&provider=${serviceProvider}`,
+      dataType: 'jsonp',
+      success(urlPerISBN) {
+        $.each(urlPerISBN, (isbn, coverUrl) => {
+          delete notfounds[isbn];
+          founds[isbn] = coverUrl;
+          cbUpdateUI(isbn, coverUrl);
         });
+      },
+    });
+  };
 
-        if (isbntosearch.length == 0) return;
+  this.reset = function resetCache() {
+    Object.keys(founds).forEach((key) => {
+      delete founds[key];
+    });
+    notfounds = {};
+  };
+}
 
-        var url = this.url,
-            provider = this.provider;
-        $.ajax({
-            url: url + '/cover?id=' + isbntosearch.join(',') + '&provider=' + provider,
-            dataType: 'jsonp',
-            success: function(urlPerISBN) {
-                $.each(urlPerISBN, function(isbn, url) {
-                    delete notfounds[isbn];
-                    founds[isbn] = url;
-                    cbUpdateUI(isbn, url);
-                });
-            }   
-        });
-    };
-
-    this.reset = function() {
-        found = {};
-        notfounds = {};
-    };
-};
-
+// Export for use
+// eslint-disable-next-line no-unused-vars
+const CoceClientConstructor = CoceClient;

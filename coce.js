@@ -3,6 +3,7 @@
 const fs = require('fs');
 const http = require('http');
 const https = require('https');
+const redis = require('redis');
 const { logger } = require('./lib/logger');
 
 // Safe config loading with error handling
@@ -11,41 +12,41 @@ try {
   const configPath = process.env.CONFIG_PATH || 'config.json';
   const configContent = fs.readFileSync(configPath, 'utf8');
   config = JSON.parse(configContent);
-  logger.info('Configuration loaded successfully', { 
+  logger.info('Configuration loaded successfully', {
     configPath,
     providers: config.providers,
-    port: config.port
+    port: config.port,
   });
 } catch (error) {
-  logger.error('Failed to load configuration', error, { 
-    configPath: process.env.CONFIG_PATH || 'config.json'
+  logger.error('Failed to load configuration', error, {
+    configPath: process.env.CONFIG_PATH || 'config.json',
   });
   process.exit(1);
 }
 
 exports.config = config;
 
-const redis = require('redis').createClient(config.redis.port, config.redis.host);
+const redisClient = redis.createClient(config.redis.port, config.redis.host);
 
 // Redis error handling
-redis.on('error', (error) => {
-  logger.error('Redis connection error', error, { 
-    host: config.redis.host, 
-    port: config.redis.port 
+redisClient.on('error', (error) => {
+  logger.error('Redis connection error', error, {
+    host: config.redis.host,
+    port: config.redis.port,
   });
 });
 
-redis.on('connect', () => {
-  logger.info('Redis connected successfully', { 
-    host: config.redis.host, 
-    port: config.redis.port 
+redisClient.on('connect', () => {
+  logger.info('Redis connected successfully', {
+    host: config.redis.host,
+    port: config.redis.port,
   });
 });
 
-redis.on('reconnecting', () => {
-  logger.warn('Redis reconnecting', { 
-    host: config.redis.host, 
-    port: config.redis.port 
+redisClient.on('reconnecting', () => {
+  logger.warn('Redis reconnecting', {
+    host: config.redis.host,
+    port: config.redis.port,
   });
 });
 
@@ -73,7 +74,7 @@ const CoceFetcher = function CoceFetcher(timeout) {
 };
 exports.CoceFetcher = CoceFetcher;
 
-CoceFetcher.RegGb = new RegExp('(zoom=5)', 'g');
+CoceFetcher.RegGb = /(zoom=5)/g;
 
 /**
  * Retrieve an ID from Amazon. Cover image direct URL are tested.
@@ -83,93 +84,93 @@ CoceFetcher.RegGb = new RegExp('(zoom=5)', 'g');
 CoceFetcher.prototype.aws = function awsFetcher(ids) {
   const repo = this;
   const providerName = 'aws';
-  
-  logger.info('Starting Amazon AWS provider fetch', { 
+
+  logger.info('Starting Amazon AWS provider fetch', {
     provider: providerName,
-    ids, 
-    count: ids.length 
+    ids,
+    count: ids.length,
   });
 
   let i = 0;
   const checkoneurl = () => {
     const id = ids[i];
     let search = id;
-    
+
     // If ISBN13, transform it into ISBN10
     search = search.replace(/-/g, '');
     if (search.length === 13) {
       // Remove the 978 prefix and get the first 9 digits
       search = search.substr(3, 9);
-      
+
       // Calculate ISBN10 checksum using the correct algorithm
       let checksum = 0;
-      for (let j = 0; j < 9; j++) {
+      for (let j = 0; j < 9; j += 1) {
         checksum += parseInt(search[j], 10) * (10 - j);
       }
       checksum = (11 - (checksum % 11)) % 11;
       checksum = checksum === 10 ? 'X' : checksum.toString();
       search += checksum;
-      
-      logger.debug('ISBN13 to ISBN10 conversion', { 
+
+      logger.debug('ISBN13 to ISBN10 conversion', {
         provider: providerName,
         original: id,
         converted: search,
-        checksum
+        checksum,
       });
     }
-    
+
     const opts = {
       hostname: 'images-na.ssl-images-amazon.com',
       method: 'HEAD',
       headers: { 'user-agent': 'Mozilla/5.0' },
       path: `/images/P/${search}.01.MZZZZZZZZZ.jpg`,
     };
-    
+
     const req = https.get(opts, (res) => {
       const url = `https://${opts.hostname}${opts.path}`;
-      
-      logger.debug('Amazon AWS response received', { 
+
+      logger.debug('Amazon AWS response received', {
         provider: providerName,
         id,
         statusCode: res.statusCode,
-        url
+        url,
       });
-      
+
       if (res.statusCode === 200 || res.statusCode === 403) {
         repo.addurl('aws', id, url);
-        logger.debug('Amazon AWS cover found', { 
-          provider: providerName,
-          id, 
-          url,
-          statusCode: res.statusCode
-        });
-      } else {
-        logger.debug('Amazon AWS cover not found', { 
+        logger.debug('Amazon AWS cover found', {
           provider: providerName,
           id,
-          statusCode: res.statusCode
+          url,
+          statusCode: res.statusCode,
+        });
+      } else {
+        logger.debug('Amazon AWS cover not found', {
+          provider: providerName,
+          id,
+          statusCode: res.statusCode,
         });
       }
-      
+
       repo.increment();
       i += 1;
-      
+
       // timeout for next request
       if (i < ids.length) {
         setTimeout(checkoneurl, 30);
       } else {
-        logger.info('Amazon AWS fetch completed', { 
+        logger.info('Amazon AWS fetch completed', {
           provider: providerName,
-          processed: ids.length
+          processed: ids.length,
         });
       }
     });
 
     req.on('error', (error) => {
-      logger.error('Amazon AWS request failed', error, { 
+      logger.error('Amazon AWS request failed', error, {
         provider: providerName,
         id,
-        url: `https://${opts.hostname}${opts.path}`
+        url: `https://${opts.hostname}${opts.path}`,
       });
       repo.increment();
       i += 1;
@@ -177,10 +178,10 @@ CoceFetcher.prototype.aws = function awsFetcher(ids) {
     });
 
     req.on('timeout', () => {
-      logger.warn('Amazon AWS request timeout', { 
+      logger.warn('Amazon AWS request timeout', {
         provider: providerName,
         id,
-        timeout: config.aws.timeout || 'default'
+        timeout: config.aws.timeout || 'default',
       });
       req.destroy();
       repo.increment();
@@ -193,7 +194,7 @@ CoceFetcher.prototype.aws = function awsFetcher(ids) {
       req.setTimeout(config.aws.timeout);
     }
   };
-  
+
   checkoneurl();
 };
 
@@ -205,11 +206,11 @@ CoceFetcher.prototype.aws = function awsFetcher(ids) {
 CoceFetcher.prototype.gb = function gb(ids) {
   const repo = this;
   const providerName = 'gb';
-  
-  logger.info('Starting Google Books provider fetch', { 
+
+  logger.info('Starting Google Books provider fetch', {
     provider: providerName,
-    ids, 
-    count: ids.length 
+    ids,
+    count: ids.length,
   });
 
   const opts = {
@@ -217,119 +218,133 @@ CoceFetcher.prototype.gb = function gb(ids) {
     port: 443,
     path: `/books?bibkeys=${ids.join(',')}&jscmd=viewapi&amp;hl=en`,
   };
-  
+
   const req = https.get(opts, (res) => {
-    logger.debug('Google Books response received', { 
+    logger.debug('Google Books response received', {
       provider: providerName,
       statusCode: res.statusCode,
-      headers: res.headers 
+      headers: res.headers,
     });
-    
+
     res.setEncoding('utf8');
     let store = '';
-    
-    res.on('data', (data) => { 
-      store += data; 
+
+    res.on('data', (data) => {
+      store += data;
     });
-    
+
     res.on('end', () => {
       try {
         // Safe evaluation with error handling
-        let _GBSBookInfo = {};
-        
+        const GBSBookInfo = {};
+
         // Validate response before eval
         if (!store || store.trim().length === 0) {
           logger.warn('Empty response from Google Books', { provider: providerName, ids });
           repo.increment(ids.length);
           return;
         }
-        
-        // Safe eval with try-catch
+
+        // Safe eval with isolated context to prevent variable conflicts
+        let bookInfo;
         try {
+          // Clear any existing _GBSBookInfo to prevent conflicts
+          // eslint-disable-next-line no-underscore-dangle
+          if (typeof _GBSBookInfo !== 'undefined') {
+            // eslint-disable-next-line no-underscore-dangle
+            delete global._GBSBookInfo;
+          }
+          
           eval(store);
+          
+          // eslint-disable-next-line no-underscore-dangle
+          bookInfo = _GBSBookInfo;
+          
+          // Clean up global scope
+          // eslint-disable-next-line no-underscore-dangle
+          delete global._GBSBookInfo;
         } catch (evalError) {
-          logger.error('Failed to evaluate Google Books response', evalError, { 
+          logger.error('Failed to evaluate Google Books response', evalError, {
             provider: providerName,
             responseLength: store.length,
-            responsePreview: store.substring(0, 200)
+            responsePreview: store.substring(0, 200),
           });
           repo.increment(ids.length);
           return;
         }
-        
-        if (typeof _GBSBookInfo === 'object' && _GBSBookInfo !== null) {
+
+        if (typeof bookInfo === 'object' && bookInfo !== null) {
           let foundCount = 0;
-          Object.values(_GBSBookInfo).forEach((item) => {
+          Object.values(bookInfo).forEach((item) => {
             try {
               const id = item.bib_key;
               let url = item.thumbnail_url;
               if (url === undefined) return;
-              
+
               // get the medium size cover image
               url = url.replace(CoceFetcher.RegGb, 'zoom=1');
               repo.addurl(providerName, id, url);
-              foundCount++;
-              
-              logger.debug('Google Books cover found', { 
+              foundCount += 1;
+
+              logger.debug('Google Books cover found', {
                 provider: providerName,
-                id, 
-                url 
+                id,
+                url,
               });
             } catch (itemError) {
-              logger.error('Error processing Google Books item', itemError, { 
+              logger.error('Error processing Google Books item', itemError, {
                 provider: providerName,
-                item 
+                item,
               });
             }
           });
-          
-          logger.info('Google Books fetch completed', { 
+
+          logger.info('Google Books fetch completed', {
             provider: providerName,
             requested: ids.length,
-            found: foundCount
+            found: foundCount,
           });
         } else {
-          logger.warn('Invalid Google Books response format', { 
+          logger.warn('Invalid Google Books response format', {
             provider: providerName,
-            responseType: typeof _GBSBookInfo
+            responseType: typeof GBSBookInfo,
           });
         }
-        
+
         repo.increment(ids.length);
-        
       } catch (error) {
-        logger.error('Error parsing Google Books response', error, { 
+        logger.error('Error parsing Google Books response', error, {
           provider: providerName,
-          responseLength: store.length 
+          responseLength: store.length,
         });
         repo.increment(ids.length);
       }
     });
 
     res.on('error', (error) => {
-      logger.error('Google Books response stream error', error, { 
+      logger.error('Google Books response stream error', error, {
         provider: providerName,
-        ids 
+        ids,
       });
       repo.increment(ids.length);
     });
   });
 
   req.on('error', (error) => {
-    logger.error('Google Books request failed', error, { 
+    logger.error('Google Books request failed', error, {
       provider: providerName,
       ids,
       host: opts.host,
-      path: opts.path
+      path: opts.path,
     });
     repo.increment(ids.length);
   });
 
   req.on('timeout', () => {
-    logger.warn('Google Books request timeout', { 
+    logger.warn('Google Books request timeout', {
       provider: providerName,
       ids,
-      timeout: config.gb.timeout || 'default'
+      timeout: config.gb.timeout || 'default',
     });
     req.destroy();
     repo.increment(ids.length);
@@ -341,28 +356,27 @@ CoceFetcher.prototype.gb = function gb(ids) {
   }
 };
 
-
 /**
  * Retrieve an ID from ORB
  * @method orb
  * @param {Array} ids The resource IDs to request to ORB
  */
- CoceFetcher.prototype.orb = function orb(ids) {
+CoceFetcher.prototype.orb = function orb(ids) {
   const repo = this;
   const providerName = 'orb';
-  
-  logger.info('Starting ORB provider fetch', { 
+
+  logger.info('Starting ORB provider fetch', {
     provider: providerName,
-    ids, 
-    count: ids.length 
+    ids,
+    count: ids.length,
   });
 
   if (!config.orb || !config.orb.user || !config.orb.key) {
-    logger.error('ORB configuration missing', null, { 
+    logger.error('ORB configuration missing', null, {
       provider: providerName,
       hasConfig: !!config.orb,
       hasUser: !!(config.orb && config.orb.user),
-      hasKey: !!(config.orb && config.orb.key)
+      hasKey: !!(config.orb && config.orb.key),
     });
     repo.increment(ids.length);
     return;
@@ -374,21 +388,21 @@ CoceFetcher.prototype.gb = function gb(ids) {
     port: 443,
     path: `/v1/products?eans=${ids.join(',')}&sort=ean_asc`,
   };
-  
+
   const req = https.get(opts, (res) => {
-    logger.debug('ORB response received', { 
+    logger.debug('ORB response received', {
       provider: providerName,
       statusCode: res.statusCode,
-      headers: res.headers 
+      headers: res.headers,
     });
-    
+
     res.setEncoding('utf8');
     let store = '';
-    
-    res.on('data', (data) => { 
-      store += data; 
+
+    res.on('data', (data) => {
+      store += data;
     });
-    
+
     res.on('end', () => {
       try {
         // Validate response before parsing
@@ -397,98 +411,97 @@ CoceFetcher.prototype.gb = function gb(ids) {
           repo.increment(ids.length);
           return;
         }
-        
+
         // Safe JSON parsing with try-catch
         let orbres;
         try {
           orbres = JSON.parse(store);
         } catch (parseError) {
-          logger.error('Failed to parse ORB JSON response', parseError, { 
+          logger.error('Failed to parse ORB JSON response', parseError, {
             provider: providerName,
             responseLength: store.length,
-            responsePreview: store.substring(0, 200)
+            responsePreview: store.substring(0, 200),
           });
           repo.increment(ids.length);
           return;
         }
-        
+
         if (orbres && orbres.data && Array.isArray(orbres.data)) {
           let foundCount = 0;
           orbres.data.forEach((item) => {
             try {
               const id = item.ean13;
-              const url = item.images && 
-                         item.images.front && 
-                         item.images.front.thumbnail && 
-                         item.images.front.thumbnail.src;
-              
+              const url = item.images
+                         && item.images.front
+                         && item.images.front.thumbnail
+                         && item.images.front.thumbnail.src;
+
               if (url === undefined) return;
-              
+
               repo.addurl(providerName, id, url);
-              foundCount++;
-              
-              logger.debug('ORB cover found', { 
+              foundCount += 1;
+
+              logger.debug('ORB cover found', {
                 provider: providerName,
-                id, 
-                url 
+                id,
+                url,
               });
             } catch (itemError) {
-              logger.error('Error processing ORB item', itemError, { 
+              logger.error('Error processing ORB item', itemError, {
                 provider: providerName,
-                item 
+                item,
               });
             }
           });
-          
-          logger.info('ORB fetch completed', { 
+
+          logger.info('ORB fetch completed', {
             provider: providerName,
             requested: ids.length,
-            found: foundCount
+            found: foundCount,
           });
         } else {
-          logger.warn('Invalid ORB response format', { 
+          logger.warn('Invalid ORB response format', {
             provider: providerName,
             hasData: !!(orbres && orbres.data),
-            isArray: !!(orbres && orbres.data && Array.isArray(orbres.data))
+            isArray: !!(orbres && orbres.data && Array.isArray(orbres.data)),
           });
         }
-        
+
         repo.increment(ids.length);
-        
       } catch (error) {
-        logger.error('Error processing ORB response', error, { 
+        logger.error('Error processing ORB response', error, {
           provider: providerName,
           responseLength: store.length,
-          statusCode: res.statusCode
+          statusCode: res.statusCode,
         });
         repo.increment(ids.length);
       }
     });
 
     res.on('error', (error) => {
-      logger.error('ORB response stream error', error, { 
+      logger.error('ORB response stream error', error, {
         provider: providerName,
-        ids 
+        ids,
       });
       repo.increment(ids.length);
     });
   });
 
   req.on('error', (error) => {
-    logger.error('ORB request failed', error, { 
+    logger.error('ORB request failed', error, {
       provider: providerName,
       ids,
       host: opts.host,
-      path: opts.path
+      path: opts.path,
     });
     repo.increment(ids.length);
   });
 
   req.on('timeout', () => {
-    logger.warn('ORB request timeout', { 
+    logger.warn('ORB request timeout', {
       provider: providerName,
       ids,
-      timeout: config.orb.timeout || 'default'
+      timeout: config.orb.timeout || 'default',
     });
     req.destroy();
     repo.increment(ids.length);
@@ -499,7 +512,6 @@ CoceFetcher.prototype.gb = function gb(ids) {
     req.setTimeout(config.orb.timeout);
   }
 };
-
 
 /**
  * Retrieve an ID from Open Library
@@ -534,35 +546,35 @@ CoceFetcher.prototype.ol = function ol(ids) {
           error: {
             name: error.name,
             message: error.message,
-            stack: error.stack
+            stack: error.stack,
           },
           process: {
             pid: process.pid,
             memory: process.memoryUsage().rss,
-            uptime: Math.floor(process.uptime())
-          }
+            uptime: Math.floor(process.uptime()),
+          },
         });
       }
       repo.increment(ids.length);
     });
   });
-  
+
   req.on('error', (error) => {
     logger.error('Open Library request failed', {
       provider: 'ol',
-      ids: ids,
+      ids,
       host: opts.host,
       path: opts.path,
       error: {
         name: error.name,
         message: error.message,
-        stack: error.stack
+        stack: error.stack,
       },
       process: {
         pid: process.pid,
         memory: process.memoryUsage().rss,
-        uptime: Math.floor(process.uptime())
-      }
+        uptime: Math.floor(process.uptime()),
+      },
     });
     repo.increment(ids.length);
   });
@@ -585,7 +597,7 @@ CoceFetcher.prototype.addurl = function addurl(provider, id, url) {
   } else {
     storedUrl = url;
   }
-  redis.setex(`${provider}.${id}`, config[provider].timeout, storedUrl);
+  redisClient.setex(`${provider}.${id}`, config[provider].timeout, storedUrl);
   if (this.url[id] === undefined) this.url[id] = {};
   this.url[id][provider] = storedUrl;
 };
@@ -595,8 +607,8 @@ CoceFetcher.prototype.addurl = function addurl(provider, id, url) {
  * Stop the timer if all URLs have been found.
  * @param {int} increment Increment the number of found IDs. No parameter = 1.
  */
-CoceFetcher.prototype.increment = function incr(increment = 1) {
-  this.count += increment;
+CoceFetcher.prototype.increment = function incr(increment) {
+  this.count += increment || 1;
   if (this.count >= this.countMax) {
     clearTimeout(this.timeoutId);
     if (!this.finished) {
@@ -622,12 +634,12 @@ CoceFetcher.prototype.add = function add(ids, provider) {
     (function addId() {
       const id = ids[i];
       const key = `${provider}.${ids[i]}`;
-      redis.get(key, (err, reply) => {
+      redisClient.get(key, (err, reply) => {
         count -= 1;
         if (reply === null) {
           // Not in the cache
           notcached.push(id);
-          redis.setex(`${provider}.${id}`, config[provider].timeout, '');
+          redisClient.setex(`${provider}.${id}`, config[provider].timeout, '');
         } else if (reply === '') {
           // In the cache, but no url via provider
           repo.increment();
@@ -661,20 +673,20 @@ CoceFetcher.prototype.add = function add(ids, provider) {
  * elasped
  */
 CoceFetcher.prototype.fetch = function fetch(ids, providers, finish) {
-  logger.info('Starting fetch operation', { 
-    ids, 
-    providers, 
+  logger.info('Starting fetch operation', {
+    ids,
+    providers,
     idsCount: ids ? ids.length : 0,
-    providersCount: providers ? providers.length : 0
+    providersCount: providers ? providers.length : 0,
   });
 
   // Validate providers parameter with proper null/undefined check FIRST
   if (!providers || !Array.isArray(providers) || providers.length === 0) {
     const error = 'At least, one provider is required';
-    logger.error('Fetch validation failed', null, { 
+    logger.error('Fetch validation failed', null, {
       error,
       providedProviders: providers,
-      availableProviders: config.providers
+      availableProviders: config.providers,
     });
     finish({ error });
     return;
@@ -688,13 +700,13 @@ CoceFetcher.prototype.fetch = function fetch(ids, providers, finish) {
 
   // Validate that all providers are available
   for (let i = 0; i < providers.length; i += 1) {
-    let provider = providers[i];
+    const provider = providers[i];
     if (config.providers.indexOf(provider) === -1) {
       const error = `Unavailable provider: ${provider}`;
-      logger.error('Invalid provider specified', null, { 
+      logger.error('Invalid provider specified', null, {
         error,
         provider,
-        availableProviders: config.providers
+        availableProviders: config.providers,
       });
       finish({ error });
       return;
@@ -716,24 +728,23 @@ CoceFetcher.prototype.fetch = function fetch(ids, providers, finish) {
     const repo = this;
     this.timeoutId = setTimeout(() => {
       if (!repo.finished) {
-        logger.warn('Fetch operation timeout', { 
+        logger.warn('Fetch operation timeout', {
           ids,
           providers,
           timeout: repo.timeout,
           completed: repo.count,
-          expected: repo.countMax
+          expected: repo.countMax,
         });
-        
+
         repo.finished = true;
-        
-        logger.info('Fetch operation completed with timeout', { 
+
+        logger.info('Fetch operation completed with timeout', {
           ids,
           providers,
           foundIds: Object.keys(repo.url).length,
-          totalUrls: Object.values(repo.url).reduce((sum, urls) => 
-            sum + (typeof urls === 'object' ? Object.keys(urls).length : 1), 0)
+          totalUrls: Object.values(repo.url).reduce((sum, urls) => sum + (typeof urls === 'object' ? Object.keys(urls).length : 1), 0),
         });
-        
+
         repo.finish(repo.url);
       }
     }, this.timeout);
@@ -741,5 +752,5 @@ CoceFetcher.prototype.fetch = function fetch(ids, providers, finish) {
 };
 
 exports.set = function setex(provider, id, url) {
-  redis.setex(`aws.${id}`, 315360000, url);
+  redisClient.setex(`aws.${id}`, 315360000, url);
 };
