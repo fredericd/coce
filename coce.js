@@ -513,20 +513,58 @@ CoceFetcher.prototype.ol = function ol(ids) {
     port: 80,
     path: `/api/books?bibkeys=${ids.join(',')}&jscmd=data`,
   };
-  http.get(opts, (res) => {
+  const req = http.get(opts, (res) => {
     res.setEncoding('utf8');
     let store = '';
     res.on('data', (data) => { store += data; });
     res.on('end', () => {
-      eval(store);
-      Object.keys(_OLBookInfo).forEach((id) => {
-        let url = _OLBookInfo[id].cover;
-        if (url === undefined) return;
-        url = url[config.ol.imageSize];
-        repo.addurl('ol', id, url);
-      });
+      try {
+        eval(store);
+        Object.keys(_OLBookInfo).forEach((id) => {
+          let url = _OLBookInfo[id].cover;
+          if (url === undefined) return;
+          url = url[config.ol.imageSize];
+          repo.addurl('ol', id, url);
+        });
+      } catch (error) {
+        logger.error('Failed to parse Open Library response', {
+          provider: 'ol',
+          responseLength: store.length,
+          responsePreview: store.substring(0, 100),
+          error: {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+          },
+          process: {
+            pid: process.pid,
+            memory: process.memoryUsage().rss,
+            uptime: Math.floor(process.uptime())
+          }
+        });
+      }
       repo.increment(ids.length);
     });
+  });
+  
+  req.on('error', (error) => {
+    logger.error('Open Library request failed', {
+      provider: 'ol',
+      ids: ids,
+      host: opts.host,
+      path: opts.path,
+      error: {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      },
+      process: {
+        pid: process.pid,
+        memory: process.memoryUsage().rss,
+        uptime: Math.floor(process.uptime())
+      }
+    });
+    repo.increment(ids.length);
   });
 };
 
