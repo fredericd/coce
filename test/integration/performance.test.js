@@ -138,20 +138,20 @@ describe('Performance and Edge Cases', function() {
         '9780415480635extra' // Too long
       ];
       
-      nock('https://books.google.com')
-        .get('/books')
-        .query(true)
-        .reply(200, responses.googleBooks.empty);
-
+      // No need to mock since validation will reject before reaching providers
       request(app)
         .get(`/cover?id=${malformedIsbns.join(',')}&provider=gb`)
-        .expect(200)
+        .expect(400)
+        .expect((res) => {
+          expect(res.body.error).to.include('Invalid ID format');
+        })
         .end(done);
     });
 
     it('should handle empty responses from all providers', function(done) {
-      const isbn = '9780415480635';
+      const isbn = '9780000000000'; // Use a non-cached ISBN
       
+      // Mock all providers to return empty responses
       nock('https://books.google.com')
         .get('/books')
         .query(true)
@@ -292,7 +292,7 @@ describe('Performance and Edge Cases', function() {
     });
 
     it('should handle partial provider failures', function(done) {
-      const isbn = '9780415480635';
+      const isbn = '9780000000001'; // Use unique ISBN to avoid cache
       
       // Google Books fails, but AWS works
       nock('https://books.google.com')

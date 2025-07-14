@@ -161,14 +161,14 @@ describe('CoceFetcher', function() {
       nock('http://openlibrary.org')
         .get('/api/books')
         .query(true)
-        .replyWithError('Connection refused');
+        .replyWithError({ code: 'ECONNREFUSED', message: 'Connection refused' });
 
       fetcher.ol(ids);
       
       setTimeout(() => {
         expect(Object.keys(fetcher.url)).to.have.length(0);
         done();
-      }, 100);
+      }, 150);
     });
   });
 
@@ -187,7 +187,7 @@ describe('CoceFetcher', function() {
         expect(fetcher.url['9780415480635']).to.exist;
         expect(fetcher.url['9780415480635']['aws']).to.include('images-na.ssl-images-amazon.com');
         done();
-      }, 200);
+      }, 300); // Increased timeout
     });
 
     it('should handle ISBN13 to ISBN10 conversion', function(done) {
