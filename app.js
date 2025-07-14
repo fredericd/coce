@@ -80,16 +80,16 @@ const validateIds = (ids, logger) => {
     return { valid: false, error: 'ID parameter is required and must be a string' };
   }
   
-  if (ids.length < 8) {
-    logger.warn('Invalid ID parameter: too short', { providedId: ids, length: ids.length });
-    return { valid: false, error: 'ID parameter must be at least 8 characters long' };
-  }
-  
   const idArray = ids.split(',').filter(id => id.trim().length > 0);
   
   if (idArray.length === 0) {
     logger.warn('Invalid ID parameter: no valid IDs after parsing', { providedId: ids });
     return { valid: false, error: 'At least one valid ID is required' };
+  }
+  
+  if (ids.length < 8) {
+    logger.warn('Invalid ID parameter: too short', { providedId: ids, length: ids.length });
+    return { valid: false, error: 'ID parameter must be at least 8 characters long' };
   }
   
   if (idArray.length > 50) {

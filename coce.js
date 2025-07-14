@@ -630,13 +630,7 @@ CoceFetcher.prototype.fetch = function fetch(ids, providers, finish) {
     providersCount: providers ? providers.length : 0
   });
 
-  this.count = 0;
-  this.countMax = ids.length * providers.length;
-  this.finish = finish;
-  this.finished = false;
-  this.url = {};
-
-  // Validate providers parameter with proper null/undefined check
+  // Validate providers parameter with proper null/undefined check FIRST
   if (!providers || !Array.isArray(providers) || providers.length === 0) {
     const error = 'At least, one provider is required';
     logger.error('Fetch validation failed', null, { 
@@ -647,6 +641,12 @@ CoceFetcher.prototype.fetch = function fetch(ids, providers, finish) {
     finish({ error });
     return;
   }
+
+  this.count = 0;
+  this.countMax = ids.length * providers.length;
+  this.finish = finish;
+  this.finished = false;
+  this.url = {};
 
   // Validate that all providers are available
   for (let i = 0; i < providers.length; i += 1) {
