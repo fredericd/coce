@@ -82,35 +82,118 @@ CoceFetcher.RegGb = new RegExp('(zoom=5)', 'g');
  */
 CoceFetcher.prototype.aws = function awsFetcher(ids) {
   const repo = this;
+  const providerName = 'aws';
+  
+  logger.info('Starting Amazon AWS provider fetch', { 
+    provider: providerName,
+    ids, 
+    count: ids.length 
+  });
+
   let i = 0;
   const checkoneurl = () => {
     const id = ids[i];
     let search = id;
+    
     // If ISBN13, transform it into ISBN10
     search = search.replace(/-/g, '');
     if (search.length === 13) {
+      // Remove the 978 prefix and get the first 9 digits
       search = search.substr(3, 9);
-      // Calculate checksum
-      let checksum = search.split('').reduce((s, c, ii) => s + parseInt(c, 10) * (ii + 1), 0);
-      checksum %= 11;
-      checksum = checksum === 10 ? 'X' : checksum;
+      
+      // Calculate ISBN10 checksum using the correct algorithm
+      let checksum = 0;
+      for (let j = 0; j < 9; j++) {
+        checksum += parseInt(search[j], 10) * (10 - j);
+      }
+      checksum = (11 - (checksum % 11)) % 11;
+      checksum = checksum === 10 ? 'X' : checksum.toString();
       search += checksum;
+      
+      logger.debug('ISBN13 to ISBN10 conversion', { 
+        provider: providerName,
+        original: id,
+        converted: search,
+        checksum
+      });
     }
+    
     const opts = {
       hostname: 'images-na.ssl-images-amazon.com',
       method: 'HEAD',
       headers: { 'user-agent': 'Mozilla/5.0' },
       path: `/images/P/${search}.01.MZZZZZZZZZ.jpg`,
     };
-    https.get(opts, (res) => {
+    
+    const req = https.get(opts, (res) => {
       const url = `https://${opts.hostname}${opts.path}`;
-      if (res.statusCode === 200 || res.statusCode === 403) repo.addurl('aws', id, url);
+      
+      logger.debug('Amazon AWS response received', { 
+        provider: providerName,
+        id,
+        statusCode: res.statusCode,
+        url
+      });
+      
+      if (res.statusCode === 200 || res.statusCode === 403) {
+        repo.addurl('aws', id, url);
+        logger.debug('Amazon AWS cover found', { 
+          provider: providerName,
+          id, 
+          url,
+          statusCode: res.statusCode
+        });
+      } else {
+        logger.debug('Amazon AWS cover not found', { 
+          provider: providerName,
+          id,
+          statusCode: res.statusCode
+        });
+      }
+      
       repo.increment();
       i += 1;
+      
       // timeout for next request
+      if (i < ids.length) {
+        setTimeout(checkoneurl, 30);
+      } else {
+        logger.info('Amazon AWS fetch completed', { 
+          provider: providerName,
+          processed: ids.length
+        });
+      }
+    });
+
+    req.on('error', (error) => {
+      logger.error('Amazon AWS request failed', error, { 
+        provider: providerName,
+        id,
+        url: `https://${opts.hostname}${opts.path}`
+      });
+      repo.increment();
+      i += 1;
       if (i < ids.length) setTimeout(checkoneurl, 30);
     });
+
+    req.on('timeout', () => {
+      logger.warn('Amazon AWS request timeout', { 
+        provider: providerName,
+        id,
+        timeout: config.aws.timeout || 'default'
+      });
+      req.destroy();
+      repo.increment();
+      i += 1;
+      if (i < ids.length) setTimeout(checkoneurl, 30);
+    });
+
+    // Set timeout if configured
+    if (config.aws && config.aws.timeout) {
+      req.setTimeout(config.aws.timeout);
+    }
   };
+  
   checkoneurl();
 };
 

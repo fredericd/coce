@@ -176,9 +176,9 @@ describe('CoceFetcher', function() {
     it('should fetch covers from Amazon successfully', function(done) {
       const ids = ['9780415480635'];
       
-      // Mock the HEAD request to Amazon
+      // Mock the HEAD request to Amazon (correct ISBN10: 0415480639)
       nock('https://images-na.ssl-images-amazon.com')
-        .head('/images/P/041548063X.01.MZZZZZZZZZ.jpg')
+        .head('/images/P/0415480639.01.MZZZZZZZZZ.jpg')
         .reply(200);
 
       fetcher.aws(ids);
@@ -193,9 +193,9 @@ describe('CoceFetcher', function() {
     it('should handle ISBN13 to ISBN10 conversion', function(done) {
       const ids = ['9780415480635']; // ISBN13
       
-      // Should convert to ISBN10: 041548063X
+      // Should convert to ISBN10: 0415480639 (correct checksum)
       nock('https://images-na.ssl-images-amazon.com')
-        .head('/images/P/041548063X.01.MZZZZZZZZZ.jpg')
+        .head('/images/P/0415480639.01.MZZZZZZZZZ.jpg')
         .reply(200);
 
       fetcher.aws(ids);
@@ -210,7 +210,7 @@ describe('CoceFetcher', function() {
       const ids = ['9780415480635'];
       
       nock('https://images-na.ssl-images-amazon.com')
-        .head('/images/P/041548063X.01.MZZZZZZZZZ.jpg')
+        .head('/images/P/0415480639.01.MZZZZZZZZZ.jpg')
         .reply(403);
 
       fetcher.aws(ids);
@@ -226,7 +226,7 @@ describe('CoceFetcher', function() {
       const ids = ['9780415480635'];
       
       nock('https://images-na.ssl-images-amazon.com')
-        .head('/images/P/041548063X.01.MZZZZZZZZZ.jpg')
+        .head('/images/P/0415480639.01.MZZZZZZZZZ.jpg')
         .reply(404);
 
       fetcher.aws(ids);
@@ -241,7 +241,7 @@ describe('CoceFetcher', function() {
       const ids = ['9780415480635'];
       
       nock('https://images-na.ssl-images-amazon.com')
-        .head('/images/P/041548063X.01.MZZZZZZZZZ.jpg')
+        .head('/images/P/0415480639.01.MZZZZZZZZZ.jpg')
         .replyWithError('ECONNREFUSED');
 
       fetcher.aws(ids);
@@ -370,7 +370,7 @@ describe('CoceFetcher', function() {
         .reply(200, responses.googleBooks.valid);
         
       nock('https://images-na.ssl-images-amazon.com')
-        .head('/images/P/041548063X.01.MZZZZZZZZZ.jpg')
+        .head('/images/P/0415480639.01.MZZZZZZZZZ.jpg')
         .reply(200);
 
       fetcher.fetch(ids, providers, (result) => {
