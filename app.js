@@ -1,6 +1,7 @@
 const express = require('express');
 const { logger } = require('./lib/logger');
 const coce = require('./coce');
+const { validateIds, validateProviders } = require('./lib/validation');
 
 const app = express();
 
@@ -122,86 +123,6 @@ app.get('/', (req, res) => {
   res.send('Welcome to coce');
 });
 
-// Input validation helpers
-const validateIds = (ids, logger) => {
-  if (!ids || typeof ids !== 'string') {
-    logger.warn('Invalid ID parameter: missing or not string', { providedId: ids });
-    return { valid: false, error: 'ID parameter is required and must be a string' };
-  }
-  
-  const idArray = ids.split(',').filter(id => id.trim().length > 0);
-  
-  if (idArray.length === 0) {
-    logger.warn('Invalid ID parameter: no valid IDs after parsing', { providedId: ids });
-    return { valid: false, error: 'At least one valid ID is required' };
-  }
-  
-  if (ids.length < 8) {
-    logger.warn('Invalid ID parameter: too short', { providedId: ids, length: ids.length });
-    return { valid: false, error: 'ID parameter must be at least 8 characters long' };
-  }
-  
-  if (idArray.length > 50) {
-    logger.warn('Invalid ID parameter: too many IDs', { count: idArray.length });
-    return { valid: false, error: 'Maximum 50 IDs allowed per request' };
-  }
-  
-  // Basic ISBN/ID format validation
-  const invalidIds = idArray.filter(id => {
-    const cleanId = id.replace(/[-\s]/g, '');
-    return !/^[0-9X]{10}$|^[0-9]{13}$|^[A-Za-z0-9]+$/.test(cleanId);
-  });
-  
-  if (invalidIds.length > 0) {
-    logger.warn('Invalid ID format detected', { 
-      invalidIds: invalidIds.slice(0, 5),
-      totalInvalid: invalidIds.length 
-    });
-    return { 
-      valid: false, 
-      error: `Invalid ID format: ${invalidIds.slice(0, 5).join(', ')}${invalidIds.length > 5 ? '...' : ''}` 
-    };
-  }
-  
-  logger.debug('ID validation successful', { ids: idArray, count: idArray.length });
-  return { valid: true, ids: idArray };
-};
-
-const validateProviders = (providers, availableProviders, logger) => {
-  if (!providers) {
-    logger.debug('No providers specified, using defaults', { availableProviders });
-    return { valid: true, providers: availableProviders };
-  }
-  
-  if (typeof providers !== 'string') {
-    logger.warn('Invalid providers parameter: not string', { providedProviders: providers });
-    return { valid: false, error: 'Providers parameter must be a string' };
-  }
-  
-  const providerArray = providers.split(',').filter(p => p.trim().length > 0);
-  
-  if (providerArray.length === 0) {
-    logger.debug('Empty providers list, using defaults', { availableProviders });
-    return { valid: true, providers: availableProviders };
-  }
-  
-  const invalidProviders = providerArray.filter(p => !availableProviders.includes(p));
-  
-  if (invalidProviders.length > 0) {
-    logger.warn('Invalid providers specified', { 
-      invalidProviders, 
-      availableProviders 
-    });
-    return { 
-      valid: false, 
-      error: `Invalid providers: ${invalidProviders.join(', ')}. Available: ${availableProviders.join(', ')}` 
-    };
-  }
-  
-  logger.debug('Provider validation successful', { providers: providerArray });
-  return { valid: true, providers: providerArray };
-};
-
 const validateCallback = (callback, logger) => {
   if (!callback) {
     return { valid: true };
@@ -227,8 +148,12 @@ app.get('/cover', (req, res) => {
     requestLogger.info('Cover request started', { query: req.query });
     
     // Validate IDs
-    const idValidation = validateIds(req.query.id, requestLogger);
+    const idValidation = validateIds(req.query.id);
     if (!idValidation.valid) {
+      requestLogger.warn('ID validation failed', { 
+        providedId: req.query.id, 
+        error: idValidation.error 
+      });
       return res.status(400).json({
         error: idValidation.error,
         requestId: req.requestId,
@@ -237,10 +162,15 @@ app.get('/cover', (req, res) => {
     }
     
     const ids = idValidation.ids;
+    requestLogger.debug('ID validation successful', { ids, count: ids.length });
     
     // Validate providers
-    const providerValidation = validateProviders(req.query.provider, coce.config.providers, requestLogger);
+    const providerValidation = validateProviders(req.query.provider, coce.config.providers);
     if (!providerValidation.valid) {
+      requestLogger.warn('Provider validation failed', { 
+        providedProviders: req.query.provider, 
+        error: providerValidation.error 
+      });
       return res.status(400).json({
         error: providerValidation.error,
         requestId: req.requestId,
@@ -249,6 +179,7 @@ app.get('/cover', (req, res) => {
     }
     
     const providers = providerValidation.providers;
+    requestLogger.debug('Provider validation successful', { providers });
     const { callback } = req.query;
     const includeAll = req.query.all !== undefined;
     

@@ -74,6 +74,21 @@ describe('Coce Express App', function() {
           .expect(200)
           .end(done);
       });
+
+      it('should accept X-ended ISBN-10', function(done) {
+        const isbn = '275403143X';
+        
+        // Mock Google Books response
+        nock('https://books.google.com')
+          .get('/books')
+          .query(true)
+          .reply(200, responses.googleBooks.valid);
+
+        request(app)
+          .get(`/cover?id=${isbn}&provider=gb`)
+          .expect(200)
+          .end(done);
+      });
     });
 
     describe('Provider handling', function() {
