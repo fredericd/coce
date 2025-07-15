@@ -70,6 +70,9 @@ run_tests() {
         "integration")
             npx mocha test/integration/*.test.js --timeout 10000
             ;;
+        "regression")
+            npx mocha test/regression/*.test.js --timeout 5000
+            ;;
         "all")
             npx mocha test/**/*.test.js --timeout 10000
             ;;
@@ -104,6 +107,7 @@ show_usage() {
     echo "Commands:"
     echo "  unit         - Run unit tests only"
     echo "  integration  - Run integration tests only"
+    echo "  regression   - Run regression tests only"
     echo "  all          - Run all tests (default)"
     echo "  config       - Run configuration tests"
     echo "  fetcher      - Run CoceFetcher tests"
@@ -118,6 +122,7 @@ show_usage() {
     echo "Examples:"
     echo "  $0 unit                    # Run unit tests"
     echo "  $0 integration            # Run integration tests"
+    echo "  $0 regression             # Run regression tests"
     echo "  VERBOSE_TESTS=1 $0 all    # Run all tests with verbose output"
 }
 
@@ -149,7 +154,10 @@ main() {
             setup_config
             check_dependencies
             npm run lint
-            run_tests "all" "All Tests"
+            run_tests "unit" "Unit Tests"
+            run_tests "integration" "Integration Tests"
+            run_tests "regression" "Regression Tests"
+            print_success "All CI tests passed!"
             ;;
         "unit")
             setup_config
@@ -160,6 +168,11 @@ main() {
             setup_config
             check_dependencies
             run_tests "integration" "Integration Tests"
+            ;;
+        "regression")
+            setup_config
+            check_dependencies
+            run_tests "regression" "Regression Tests"
             ;;
         "all")
             setup_config

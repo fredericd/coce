@@ -254,12 +254,12 @@ CoceFetcher.prototype.gb = function gb(ids) {
             // eslint-disable-next-line no-underscore-dangle
             delete global._GBSBookInfo;
           }
-          
+
           eval(store);
-          
+
           // eslint-disable-next-line no-underscore-dangle
           bookInfo = _GBSBookInfo;
-          
+
           // Clean up global scope
           // eslint-disable-next-line no-underscore-dangle
           delete global._GBSBookInfo;
