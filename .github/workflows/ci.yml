@@ -141,8 +141,8 @@ jobs:
             cp config.json.sample config.json
           fi
           
-          # Start services with docker-compose
-          docker-compose up -d
+          # Start services with docker compose V2
+          docker compose up -d
           
           # Wait for services to be ready
           echo "Waiting for services to start..."
@@ -158,7 +158,7 @@ jobs:
           
           # Check container logs for errors
           echo "Checking container logs..."
-          docker-compose logs coce
+          docker compose logs coce
           
           # Cleanup
-          docker-compose down
+          docker compose down
