@@ -19,13 +19,16 @@
   },
   "license": "MIT",
   "scripts": {
-    "start": "node app.js"
+    "start": "node app.js",
+    "lint": "eslint *.js",
+    "lint:fix": "eslint *.js --fix",
+    "test": "mocha test/*.js"
   },
   "devDependencies": {
-    "eslint": "^7.24.0",
-    "eslint-config-airbnb-base": "^14.2.1",
-    "eslint-plugin-import": "^2.22.1",
-    "mocha": "^8.2.1",
-    "supertest": "^6.0.1"
+    "eslint": "^8.57.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.29.0",
+    "mocha": "^10.7.3",
+    "supertest": "^7.0.0"
   }
 }
