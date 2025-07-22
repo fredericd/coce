@@ -1,0 +1,31 @@
+{
+  "port": 8080,
+  "providers": ["gb", "aws", "ol"],
+  "timeout": 5000,
+  "redis": {
+    "host": "localhost",
+    "port": 6379,
+    "timeout": 1000
+  },
+  "cache": {
+    "path": "/tmp/coce-test-cache",
+    "url": "http://localhost:8080/cache"
+  },
+  "gb": {
+    "timeout": 10000
+  },
+  "ol": {
+    "timeout": 10000,
+    "imageSize": "medium"
+  },
+  "aws": {
+    "imageSize": "MediumImage",
+    "timeout": 5000
+  },
+  "orb": {
+    "user": "test",
+    "key": "test",
+    "cache": false,
+    "timeout": 10000
+  }
+}

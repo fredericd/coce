@@ -4,7 +4,7 @@
 
 1. **Start the services:**
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 
 2. **Test the service:**
@@ -47,22 +47,22 @@ See `.env.example` for all available options.
 
 To rebuild after code changes:
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
 To view logs:
 ```bash
-docker-compose logs -f coce
+docker compose logs -f coce
 ```
 
 To stop services:
 ```bash
-docker-compose down
+docker compose down
 ```
 
 To stop and remove volumes:
 ```bash
-docker-compose down -v
+docker compose down -v
 ```
 
 ## Production Deployment
@@ -71,11 +71,11 @@ For production, override environment variables:
 
 ```bash
 # Using environment file
-docker-compose --env-file .env.prod up -d
+docker compose --env-file .env.prod up -d
 
 # Or set variables directly
 COCE_PROVIDERS=gb,aws,ol,orb \
 COCE_ORB_USER=myuser \
 COCE_ORB_KEY=mykey \
-docker-compose up -d
+docker compose up -d
 ```

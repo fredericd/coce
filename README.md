@@ -70,6 +70,66 @@ cd _Coce HOME_
 node app.js
 ```
 
+## Testing
+
+Coce includes a comprehensive test suite to ensure reliability and catch regressions during development.
+
+### Prerequisites
+
+The test suite uses mocked external dependencies, so no external services (Redis, internet connection) are required for testing.
+
+### Running Tests
+
+```bash
+# Install dependencies (including test dependencies)
+npm install
+
+# Run all tests
+npm test
+
+# Run specific test suites
+npm run test:unit          # Unit tests only
+npm run test:integration   # Integration tests only
+
+# Run tests with verbose output
+VERBOSE_TESTS=1 npm test
+```
+
+### Test Runner Script
+
+For convenience, use the test runner script:
+
+```bash
+# Run all tests
+./run-tests.sh
+
+# Run specific test types
+./run-tests.sh unit         # Unit tests
+./run-tests.sh integration  # Integration tests
+./run-tests.sh config       # Configuration tests
+./run-tests.sh performance  # Performance tests
+
+# Run with linting
+./run-tests.sh ci          # Full CI suite (lint + all tests)
+```
+
+### Test Structure
+
+- **Unit Tests**: Core functionality, configuration validation, individual provider logic
+- **Integration Tests**: API endpoints, Redis caching, error scenarios
+- **Performance Tests**: Large datasets, concurrent requests, timeout handling
+- **Mocked Dependencies**: All external services (HTTP requests, Redis) are mocked for reliable testing
+
+### Continuous Integration
+
+Tests run automatically on:
+- Every push to main branches
+- Pull requests
+- Multiple Node.js versions (16.x, 18.x, 20.x)
+- Both with and without Redis service
+
+See `test/README.md` for detailed testing documentation.
+
 ## Deployment on a production server
 
 By default, running Coce directly, there isn't any supervision mechanism, and
