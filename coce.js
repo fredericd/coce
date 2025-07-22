@@ -64,7 +64,10 @@ CoceFetcher.prototype.aws = function awsFetcher(ids) {
     };
     https.get(opts, (res) => {
       const url = `https://${opts.hostname}${opts.path}`;
-      if (res.statusCode === 200 || res.statusCode === 403) repo.addurl('aws', id, url);
+      if (res.statusCode === 200 || res.statusCode === 403) {
+        // 43 bytes is the size of 1x1px gif returned by Amazon
+        if (res.headers['content-length'] !== '43') repo.addurl('aws', id, url);
+      }
       repo.increment();
       i += 1;
       // timeout for next request
